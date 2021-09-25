@@ -14,7 +14,7 @@ import traceback
 
 
 class Bot:
-    def __init__(self, broker: BrokerType):
+    def __init__(self, broker: BrokerType) -> NoReturn:
         self.broker = Broker.factory(broker)
         self.config = Config(self.broker.brokerType)
 
@@ -39,7 +39,7 @@ class Bot:
         # Meta info
         self.interval = 0
 
-    async def run_async(self):
+    async def run_async(self) -> NoReturn:
         """
         Sells, adjusts TP and SL according to trailing values
         and buys new tickers
@@ -84,7 +84,7 @@ class Bot:
         finally:
             self.save()
 
-    def update(self, key, order, **kwargs):
+    def update(self, key, order, **kwargs) -> NoReturn:
         # This is for testing
         current_price = kwargs.get(
             "current_price", self.broker.get_current_price(order.ticker)
@@ -109,7 +109,7 @@ class Bot:
         elif current_price < order.trailing_stop_loss:
             self.close_trade(order, current_price, order.price)
 
-    def periodic_update(self):
+    def periodic_update(self) -> NoReturn:
         """
         log an update about every LOG_INFO_UPDATE_INTERVAL minutes
         also re-saves files
@@ -184,7 +184,7 @@ class Bot:
 
         return order
 
-    def close_trade(self, order: Order, current_price: float, stored_price: float):
+    def close_trade(self, order: Order, current_price: float, stored_price: float) -> NoReturn:
         Config.NOTIFICATION_SERVICE.send_verbose(
             "CLOSING Order:\n{}".format(order.json())
         )
@@ -237,7 +237,7 @@ class Bot:
         if not Config.TEST and Config.SHARE_DATA:
             Util.post_pipedream(sold)
 
-    def process_new_ticker(self, new_ticker: Ticker, **kwargs):
+    def process_new_ticker(self, new_ticker: Ticker, **kwargs) -> NoReturn:
         # buy if the ticker hasn't already been bought
         Config.NOTIFICATION_SERVICE.send_verbose(
             "PROCESSING NEW TICKER:\n{}".format(new_ticker.json())
@@ -293,6 +293,6 @@ class Bot:
                 f"portfolio, or {self.config.QUOTE_TICKER} does not match.\n{new_ticker.json()}"
             )
 
-    def save(self):
+    def save(self) -> NoReturn:
         Util.dump_json(self.orders_file, self.orders)
         Util.dump_json(self.sold_file, self.sold)

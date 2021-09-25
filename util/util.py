@@ -1,6 +1,6 @@
 from pathlib import Path
 from logging.config import dictConfig
-from typing import Dict, Optional, Any, List
+from typing import Dict, Optional, Any, List, NoReturn
 import json
 import pickle
 from util.config import Config
@@ -68,7 +68,7 @@ class Util:
             return json.load(f)
 
     @staticmethod
-    def dump_json(file: Path, obj: Dict):
+    def dump_json(file: Path, obj: Dict) -> NoReturn:
         with open(file.absolute(), "w") as f:
             json.dump(obj, f, indent=4)
 
@@ -82,7 +82,7 @@ class Util:
             return pickle.load(f)
 
     @staticmethod
-    def dump_pickle(obj: Any, obj_desc: str, directory: Optional[Path] = None):
+    def dump_pickle(obj: Any, obj_desc: str, directory: Optional[Path] = None) -> NoReturn:
         if directory is None:
             file = Config.TEST_DIR.joinpath(
                 f'{obj_desc}{datetime.now().strftime("%Y%m%d%H%M%S")}'

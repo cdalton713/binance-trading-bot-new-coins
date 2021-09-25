@@ -6,7 +6,7 @@ from functools import partial
 import requests
 import urllib3
 
-logger = logging.getLogger(__name__)
+logger_ = logging.getLogger(__name__)
 logging_logger = logging.getLogger(__name__)
 
 

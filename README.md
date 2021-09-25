@@ -29,9 +29,6 @@ This is a bit more involved than Discord...
 10. Copy the token to  `NOTIFICATION_OPTIONS -> TELEGRAM -> AUTH -> ENDPOINT`
 11. Copy the chat id to `NOTIFICATION_OPTIONS -> TELEGRAM -> AUTH -> CHAT_ID`
 
-#### I found a bug/issue:
-Please include any applicable stack traces and logs.  There are currently two log files: `errors.log` and `verbose_log.log`.  Please also attach any relevant information from these files.
-
 ## TODO List:
 - Swap to multi-threading?
 - ~~Notification service (Discord/Telegram)~~

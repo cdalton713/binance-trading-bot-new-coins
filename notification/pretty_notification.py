@@ -12,14 +12,14 @@ class PrettyNotification(NotificationAbstract):
         name: str,
         settings: NotificationSettings,
         auth: Union[None, NotificationAuth],
-    ):
+    ) -> NoReturn:
         self.settings = settings
         if auth is None:
             print("MISSING AUTHENTICATION FOR {}".format(name))
             sys.exit(1)
         self.send_fn = None
 
-    def _format_message(self, order: Order):
+    def _format_message(self, order: Order) -> str:
         return """
         Broker: {broker}
         Datetime: {datetime}
@@ -38,7 +38,7 @@ class PrettyNotification(NotificationAbstract):
             price=round(order.price, 4),
         )
 
-    def _pretty_entry(self, order: Order, *args, **kwargs):
+    def _pretty_entry(self, order: Order, *args, **kwargs) -> str:
         if "custom" in kwargs and kwargs["custom"] and "comment" in kwargs:
             return kwargs["comment"]
         else:
@@ -50,7 +50,7 @@ class PrettyNotification(NotificationAbstract):
             msg += self._format_message(order)
             return msg
 
-    def _pretty_close(self, order: Order, *args, **kwargs):
+    def _pretty_close(self, order: Order, *args, **kwargs) -> str:
         if "custom" in kwargs and kwargs["custom"] and "comment" in kwargs:
             return kwargs["comment"]
         else:
@@ -62,38 +62,38 @@ class PrettyNotification(NotificationAbstract):
             msg += self._format_message(order)
             return msg
 
-    def _send(self, message: str, *args, **kwargs):
+    def _send(self, message: str, *args, **kwargs) -> NoReturn:
         raise NotImplementedError
 
-    def send_message(self, message: str, *args, **kwargs):
+    def send_message(self, message: str, *args, **kwargs) -> NoReturn:
         if self.settings.send_message:
             self._send(message, *args, **kwargs)
 
-    def send_error(self, message: str, *args, **kwargs):
+    def send_error(self, message: str, *args, **kwargs) -> NoReturn:
         if self.settings.send_error:
             self._send(message, *args, **kwargs)
 
-    def send_verbose(self, message: str, *args, **kwargs):
+    def send_verbose(self, message: str, *args, **kwargs) -> NoReturn:
         if self.settings.send_verbose:
             self._send(message, *args, **kwargs)
 
-    def send_warning(self, message: str, *args, **kwargs):
+    def send_warning(self, message: str, *args, **kwargs) -> NoReturn:
         if self.settings.send_warning:
             self._send(message, *args, **kwargs)
 
-    def send_info(self, message: str, *args, **kwargs):
+    def send_info(self, message: str, *args, **kwargs) -> NoReturn:
         if self.settings.send_info:
             self._send(message, *args, **kwargs)
 
-    def send_debug(self, message: str, *args, **kwargs):
+    def send_debug(self, message: str, *args, **kwargs) -> NoReturn:
         if self.settings.send_debug:
             self._send(message, *args, **kwargs)
 
-    def send_entry(self, order: Order, *args, **kwargs):
+    def send_entry(self, order: Order, *args, **kwargs) -> NoReturn:
         if self.settings.send_entry:
             self._send(self._pretty_entry(order, *args, **kwargs))
 
-    def send_close(self, order: Order, *args, **kwargs):
+    def send_close(self, order: Order, *args, **kwargs) -> NoReturn:
         if self.settings.send_close:
             self._send(self._pretty_close(order, *args, **kwargs))
 
@@ -105,7 +105,7 @@ class DiscordNotification(PrettyNotification):
         super().__init__("DISCORD", settings, auth)
         self.send_fn = DiscordWebhook(auth.endpoint)
 
-    def _send(self, message: str, *args, **kwargs):
+    def _send(self, message: str, *args, **kwargs) -> NoReturn:
         self.send_fn.set_content(message)
         self.send_fn.execute()
 
@@ -120,5 +120,5 @@ class TelegramNotification(PrettyNotification):
         self.chat_id = auth.chat_id
         self.send_fn = Chat(self.chat_id, "private", bot=self.bot)
 
-    def _send(self, message: str, *args, **kwargs):
+    def _send(self, message: str, *args, **kwargs) -> NoReturn:
         self.send_fn.send_message(message)

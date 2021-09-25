@@ -29,7 +29,7 @@ class Config:
         [Notification(service="COMMAND_LINE", enabled=True, settings=None)]
     )
 
-    def __init__(self, broker: BrokerType, file: str = None):
+    def __init__(self, broker: BrokerType, file: str = None) -> NoReturn:
         # Default config values
         self.ENABLED = False
         self.SUBACCOUNT = None

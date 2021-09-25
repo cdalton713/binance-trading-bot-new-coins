@@ -19,11 +19,11 @@ logger = logging.getLogger(__name__)
 
 
 class Broker(ABC):
-    def __init__(self):
+    def __init__(self) -> NoReturn:
         self.brokerType = None
 
     @staticmethod
-    def factory(broker: BrokerType, subaccount: Union[str, None] = None) -> Any:
+    def factory(broker: BrokerType, subaccount: Union[str, None] = None) -> any:
         with open(Config.AUTH_DIR.joinpath("auth.yml")) as file:
             auth = yaml.load(file, Loader=yaml.FullLoader)
 
