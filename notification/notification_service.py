@@ -7,28 +7,28 @@ class NotificationAbstract(ABC):
     def _send(self, message: str, *args, **kwargs):
         raise NotImplementedError
 
-    def send_message(self, message: str, *args, **kwargs):
+    def send_message(self, message: str, *args, **kwargs) -> NoReturn:
         raise NotImplementedError
 
-    def send_error(self, message: str, *args, **kwargs):
+    def send_error(self, message: str, *args, **kwargs) -> NoReturn:
         raise NotImplementedError
 
-    def send_verbose(self, message: str, *args, **kwargs):
+    def send_verbose(self, message: str, *args, **kwargs) -> NoReturn:
         raise NotImplementedError
 
-    def send_warning(self, message: str, *args, **kwargs):
+    def send_warning(self, message: str, *args, **kwargs) -> NoReturn:
         raise NotImplementedError
 
-    def send_info(self, message: str, *args, **kwargs):
+    def send_info(self, message: str, *args, **kwargs) -> NoReturn:
         raise NotImplementedError
 
-    def send_debug(self, message: str, *args, **kwargs):
+    def send_debug(self, message: str, *args, **kwargs) -> NoReturn:
         raise NotImplementedError
 
-    def send_entry(self, order: Order, *args, **kwargs):
+    def send_entry(self, order: Order, *args, **kwargs) -> NoReturn:
         raise NotImplementedError
 
-    def send_close(self, order: Order, *args, **kwargs):
+    def send_close(self, order: Order, *args, **kwargs) -> NoReturn:
         raise NotImplementedError
 
 

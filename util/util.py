@@ -1,14 +1,15 @@
 from pathlib import Path
 from logging.config import dictConfig
-from typing import Dict, Optional, Any, List
+from typing import Dict, Optional, Any, List, NoReturn, Union, Type
 import json
 import pickle
 from util.config import Config
-from datetime import datetime
 import requests
 from requests import Response
 from pydantic import BaseModel
-
+from datetime import date, datetime
+from util.types import Sold, Order
+from json.decoder import JSONDecodeError
 
 class Util:
     FORMAT = "[%(levelname)s] %(asctime)s: %(message)s."
@@ -63,14 +64,25 @@ class Util:
         dictConfig(logging_config)
 
     @staticmethod
-    def load_json(file: Path):
-        with open(file.absolute(), "r+") as f:
-            return json.load(f)
+    def load_json(file: Path, model: Type[Union[Order, Sold]]) -> Dict[str, BaseModel]:
+        try:
+            with open(file.absolute(), "r+") as f:
+                dict_ = json.load(f)
+        except JSONDecodeError:
+            return {}
+        else:
+            for key, value in dict_.items():
+                dict_[key] = model.parse_obj(value)
+            return dict_
 
     @staticmethod
-    def dump_json(file: Path, obj: Dict):
+    def dump_json(file: Path, obj: Dict[str, BaseModel]) -> NoReturn:
+        dict_ = {}
+        for key, value in obj.items():
+            dict_[key] = value.dict()
+
         with open(file.absolute(), "w") as f:
-            json.dump(obj, f, indent=4)
+            json.dump(dict_, f, indent=4, default=json_serial)
 
     @staticmethod
     def percent_change(value: float, percent: float) -> float:
@@ -82,7 +94,7 @@ class Util:
             return pickle.load(f)
 
     @staticmethod
-    def dump_pickle(obj: Any, obj_desc: str, directory: Optional[Path] = None):
+    def dump_pickle(obj: Any, obj_desc: str, directory: Optional[Path] = None) -> NoReturn:
         if directory is None:
             file = Config.TEST_DIR.joinpath(
                 f'{obj_desc}{datetime.now().strftime("%Y%m%d%H%M%S")}'
@@ -117,3 +129,10 @@ def convert_ticker(value: str, to_broker: str, pairing: str) -> str:
         return value
     else:
         return value
+
+
+def json_serial(obj):
+    """JSON serializer for objects not serializable by default json code"""
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat()
+    raise TypeError("Type %s not serializable" % type(obj))

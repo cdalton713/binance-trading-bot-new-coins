@@ -19,11 +19,11 @@ logger = logging.getLogger(__name__)
 
 
 class Broker(ABC):
-    def __init__(self):
+    def __init__(self) -> NoReturn:
         self.brokerType = None
 
     @staticmethod
-    def factory(broker: BrokerType, subaccount: Union[str, None] = None) -> Any:
+    def factory(broker: BrokerType, subaccount: Union[str, None] = None) -> any:
         with open(Config.AUTH_DIR.joinpath("auth.yml")) as file:
             auth = yaml.load(file, Loader=yaml.FullLoader)
 
@@ -146,17 +146,17 @@ class FTX(FtxClient, Broker):
         except LookupError as e:
             pass
 
-    @retry(
-        (
-                Exception,
-        ),
-        2,
-        3,
-        None,
-        1,
-        0,
-        logger,
-    )
+    # @retry(
+    #     (
+    #             Exception,
+    #     ),
+    #     2,
+    #     3,
+    #     None,
+    #     1,
+    #     0,
+    #     logger,
+    # )
     @FtxClient.authentication_required
     def place_order(self, config: Config, *args, **kwargs) -> Order:
         if Config.TEST:
@@ -234,18 +234,18 @@ class Binance(BinanceClient, Broker):
         )
         return float(self.get_symbol_ticker(symbol=ticker.ticker)["price"])
 
-    @retry(
-        (
-                binance.exceptions.BinanceAPIException,
-                Exception,
-        ),
-        2,
-        3,
-        None,
-        1,
-        0,
-        logger,
-    )
+    # @retry(
+    #     (
+    #             binance.exceptions.BinanceAPIException,
+    #             Exception,
+    #     ),
+    #     2,
+    #     3,
+    #     None,
+    #     1,
+    #     0,
+    #     logger,
+    # )
     def place_order(self, config: Config, *args, **kwargs) -> Order:
         kwargs["symbol"] = kwargs["ticker"].ticker
         kwargs["type"] = "market"

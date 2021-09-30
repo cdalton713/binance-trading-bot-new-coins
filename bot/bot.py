@@ -14,7 +14,7 @@ import traceback
 
 
 class Bot:
-    def __init__(self, broker: BrokerType):
+    def __init__(self, broker: BrokerType) -> NoReturn:
         self.broker = Broker.factory(broker)
         self.config = Config(self.broker.brokerType)
 
@@ -34,12 +34,14 @@ class Bot:
             file = Config.ROOT_DIR.joinpath(f"{self.broker.brokerType}_{f}.json")
             self.__setattr__(f"{f}_file", file)
             if file.exists():
-                self.__setattr__(f, Util.load_json(file))
+                self.__setattr__(
+                    f, Util.load_json(file, Order if f == "orders" else Sold)
+                )
 
         # Meta info
         self.interval = 0
 
-    async def run_async(self):
+    async def run_async(self) -> NoReturn:
         """
         Sells, adjusts TP and SL according to trailing values
         and buys new tickers
@@ -84,7 +86,7 @@ class Bot:
         finally:
             self.save()
 
-    def update(self, key, order, **kwargs):
+    def update(self, key, order, **kwargs) -> NoReturn:
         # This is for testing
         current_price = kwargs.get(
             "current_price", self.broker.get_current_price(order.ticker)
@@ -109,7 +111,13 @@ class Bot:
         elif current_price < order.trailing_stop_loss:
             self.close_trade(order, current_price, order.price)
 
-    def periodic_update(self):
+    def upgrade_update(self) -> NoReturn:
+        if self.config.OUTDATED:
+            Config.NOTIFICATION_SERVICE.send_warning(
+                """\n*******************************************\nNEW UPDATE AVAILABLE. PLEASE UPDATE!\n*******************************************"""
+            )
+
+    def periodic_update(self) -> NoReturn:
         """
         log an update about every LOG_INFO_UPDATE_INTERVAL minutes
         also re-saves files
@@ -130,6 +138,7 @@ class Bot:
                 f"[{self.broker.brokerType}]\tSaving.."
             )
             self.save()
+            self.upgrade_update()
 
     def get_starting_tickers(self) -> Tuple[List[Ticker], Dict[str, bool]]:
         """
@@ -157,7 +166,10 @@ class Bot:
         )
         all_tickers_recheck = self.broker.get_tickers(self.config.QUOTE_TICKER)
 
-        if all_tickers_recheck is not None and len(all_tickers_recheck) != self.ticker_seen_dict:
+        if (
+            all_tickers_recheck is not None
+            and len(all_tickers_recheck) != self.ticker_seen_dict
+        ):
             new_tickers = [
                 i for i in all_tickers_recheck if i.ticker not in self.ticker_seen_dict
             ]
@@ -184,7 +196,9 @@ class Bot:
 
         return order
 
-    def close_trade(self, order: Order, current_price: float, stored_price: float):
+    def close_trade(
+        self, order: Order, current_price: float, stored_price: float
+    ) -> NoReturn:
         Config.NOTIFICATION_SERVICE.send_verbose(
             "CLOSING Order:\n{}".format(order.json())
         )
@@ -237,7 +251,7 @@ class Bot:
         if not Config.TEST and Config.SHARE_DATA:
             Util.post_pipedream(sold)
 
-    def process_new_ticker(self, new_ticker: Ticker, **kwargs):
+    def process_new_ticker(self, new_ticker: Ticker, **kwargs) -> NoReturn:
         # buy if the ticker hasn't already been bought
         Config.NOTIFICATION_SERVICE.send_verbose(
             "PROCESSING NEW TICKER:\n{}".format(new_ticker.json())
@@ -293,6 +307,6 @@ class Bot:
                 f"portfolio, or {self.config.QUOTE_TICKER} does not match.\n{new_ticker.json()}"
             )
 
-    def save(self):
+    def save(self) -> NoReturn:
         Util.dump_json(self.orders_file, self.orders)
         Util.dump_json(self.sold_file, self.sold)

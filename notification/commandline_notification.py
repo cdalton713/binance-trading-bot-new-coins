@@ -10,7 +10,7 @@ errLogger.propagate = False
 
 
 class CommandlineNotification(NotificationAbstract):
-    def __init__(self):
+    def __init__(self) -> NoReturn:
         super().__init__()
 
     def _default_msg_start(self, order: Order) -> str:

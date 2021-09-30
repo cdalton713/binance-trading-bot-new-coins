@@ -6,6 +6,7 @@ from util import Config
 import logging
 from notification import NotificationService
 from time import sleep
+from binance.exceptions import BinanceAPIException
 
 # setup logging
 Util.setup_logging(name="new-coin-bot", level="DEBUG")
@@ -64,6 +65,7 @@ class TestBot(TestCase):
             self.Binance.process_new_ticker(new_ticker)
 
         self.assertTrue("BTCUSDT" in self.Binance.orders)
+        self.FTX.save()
 
     def test_purchase_invalid_symbol(self):
         tickers, ticker_dict = self.Binance.get_starting_tickers()
@@ -76,9 +78,8 @@ class TestBot(TestCase):
             new_tickers[0].ticker = 'INVALIDUSDT'
             for new_ticker in new_tickers:
                 self.Binance.process_new_ticker(new_ticker)
-        except binance.exceptions.BinanceAPIException:
+        except BinanceAPIException:
             self.assertEqual(True, True)
-
 
     def test_convert_size(self):
         ticker = Ticker(ticker="BTC/USDT", base_ticker="BTC", quote_ticker="USDT")
