@@ -44,9 +44,15 @@ I would love contributors! Please send a pull request, and I will review it.
 Please include any applicable stack traces and logs.  There are currently two log files: `errors.log` and `verbose_log.log`.  Please also attach any relevant information from these files.
 
 ## Changelog:
+- 2021-09-30:
+  1. Fixed Save issue ([#6](https://github.com/cdalton713/trading-bot-new-coins/issues/6)).
+  2. Removed retry option from purchases. Possible fix for [#5](https://github.com/cdalton713/trading-bot-new-coins/issues/5).
+  3. Checks version number and notifies if there is a new version.
+  
 - 2021-09-24: 
-  1. `Invalid Symbol` Binance error finally fixed! 
+  1. `Invalid Symbol` Binance error finally fixed ([#4](https://github.com/cdalton713/trading-bot-new-coins/issues/4))! 
   2. Notifications for Discord and Telegram added
+  
 - 2021-09-16:
   1. New baseline - I've done a poor job tracking changes thus far.
 

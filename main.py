@@ -19,6 +19,9 @@ def setup() -> List[Bot]:
     for broker in Config.ENABLED_BROKERS:
         Config.NOTIFICATION_SERVICE.send_info("Creating bot [{}]".format(broker))
         b.append(Bot(broker))
+
+    if len(b) > 0:
+        b[0].upgrade_update()
     return b
 
 

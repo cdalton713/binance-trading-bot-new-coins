@@ -34,7 +34,9 @@ class Bot:
             file = Config.ROOT_DIR.joinpath(f"{self.broker.brokerType}_{f}.json")
             self.__setattr__(f"{f}_file", file)
             if file.exists():
-                self.__setattr__(f, Util.load_json(file))
+                self.__setattr__(
+                    f, Util.load_json(file, Order if f == "orders" else Sold)
+                )
 
         # Meta info
         self.interval = 0
@@ -109,6 +111,12 @@ class Bot:
         elif current_price < order.trailing_stop_loss:
             self.close_trade(order, current_price, order.price)
 
+    def upgrade_update(self) -> NoReturn:
+        if self.config.OUTDATED:
+            Config.NOTIFICATION_SERVICE.send_warning(
+                """\n*******************************************\nNEW UPDATE AVAILABLE. PLEASE UPDATE!\n*******************************************"""
+            )
+
     def periodic_update(self) -> NoReturn:
         """
         log an update about every LOG_INFO_UPDATE_INTERVAL minutes
@@ -130,6 +138,7 @@ class Bot:
                 f"[{self.broker.brokerType}]\tSaving.."
             )
             self.save()
+            self.upgrade_update()
 
     def get_starting_tickers(self) -> Tuple[List[Ticker], Dict[str, bool]]:
         """
@@ -157,7 +166,10 @@ class Bot:
         )
         all_tickers_recheck = self.broker.get_tickers(self.config.QUOTE_TICKER)
 
-        if all_tickers_recheck is not None and len(all_tickers_recheck) != self.ticker_seen_dict:
+        if (
+            all_tickers_recheck is not None
+            and len(all_tickers_recheck) != self.ticker_seen_dict
+        ):
             new_tickers = [
                 i for i in all_tickers_recheck if i.ticker not in self.ticker_seen_dict
             ]
@@ -184,7 +196,9 @@ class Bot:
 
         return order
 
-    def close_trade(self, order: Order, current_price: float, stored_price: float) -> NoReturn:
+    def close_trade(
+        self, order: Order, current_price: float, stored_price: float
+    ) -> NoReturn:
         Config.NOTIFICATION_SERVICE.send_verbose(
             "CLOSING Order:\n{}".format(order.json())
         )

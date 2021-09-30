@@ -146,17 +146,17 @@ class FTX(FtxClient, Broker):
         except LookupError as e:
             pass
 
-    @retry(
-        (
-                Exception,
-        ),
-        2,
-        3,
-        None,
-        1,
-        0,
-        logger,
-    )
+    # @retry(
+    #     (
+    #             Exception,
+    #     ),
+    #     2,
+    #     3,
+    #     None,
+    #     1,
+    #     0,
+    #     logger,
+    # )
     @FtxClient.authentication_required
     def place_order(self, config: Config, *args, **kwargs) -> Order:
         if Config.TEST:
@@ -234,18 +234,18 @@ class Binance(BinanceClient, Broker):
         )
         return float(self.get_symbol_ticker(symbol=ticker.ticker)["price"])
 
-    @retry(
-        (
-                binance.exceptions.BinanceAPIException,
-                Exception,
-        ),
-        2,
-        3,
-        None,
-        1,
-        0,
-        logger,
-    )
+    # @retry(
+    #     (
+    #             binance.exceptions.BinanceAPIException,
+    #             Exception,
+    #     ),
+    #     2,
+    #     3,
+    #     None,
+    #     1,
+    #     0,
+    #     logger,
+    # )
     def place_order(self, config: Config, *args, **kwargs) -> Order:
         kwargs["symbol"] = kwargs["ticker"].ticker
         kwargs["type"] = "market"

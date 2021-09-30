@@ -5,6 +5,14 @@ auth/auth.yml
 order.json
 sold.json
 
+*_orders.json
+*_sold.json
+
+BINANCE_orders.json
+BINANCE_sold.json
+
+FTX_orders.json
+FTX_sold.json
 
 # Created by https://www.toptal.com/developers/gitignore/api/pycharm,python
 # Edit at https://www.toptal.com/developers/gitignore?templates=pycharm,python
@@ -262,5 +270,3 @@ config.yml
 
 logs/
 
-*_orders.json
-*_sold.json

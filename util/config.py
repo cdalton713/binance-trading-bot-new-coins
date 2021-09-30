@@ -1,9 +1,10 @@
 import yaml
-from typing import NoReturn
+from typing import NoReturn, Tuple
 from pathlib import Path
 import logging
 from util.types import BrokerType, BROKERS, Notification, NotificationAuth
 from notification import NotificationService
+import requests
 
 logger = logging.getLogger(__name__)
 errLogger = logging.getLogger("error_log")
@@ -13,6 +14,7 @@ errLogger.propagate = False
 class Config:
     # Default global config values
     PIPEDREAM_URL = "https://e853670d8092ce2689bf7fe37c7b4830.m.pipedream.net"
+    VERSION_URL = "https://raw.githubusercontent.com/cdalton713/trading-bot-new-coins/main/version"
     SHARE_DATA = True
 
     ROOT_DIR = Path(__file__).parent.parent
@@ -42,6 +44,14 @@ class Config:
         self.TRAILING_STOP_LOSS_ACTIVATION = 35
 
         self.load_broker_config(broker, file)
+        self.CURRENT_VERSION, self.LATEST_VERSION, self.OUTDATED = self.load_version()
+
+    def load_version(self) -> Tuple[int, int, bool]:
+        latest_version = int(requests.get(self.VERSION_URL).text)
+        with open(self.ROOT_DIR.joinpath('version'), 'r') as f:
+            current_version = int(f.read())
+
+        return current_version, latest_version, latest_version > current_version
 
     @classmethod
     def load_global_config(cls, file: str = None) -> NoReturn:
