@@ -81,7 +81,8 @@ DEFAULT_NOTIFICATIONS = CustomNotificationSettings(
 
 
 def parse_settings(settings: Dict):
-    return CustomNotificationSettings(
+    try:
+        settings = CustomNotificationSettings(
         message=settings['SEND_MESSAGE'] if 'SEND_MESSAGE' in settings else DEFAULT_NOTIFICATIONS.message,
         error=settings['SEND_ERROR'] if 'SEND_ERROR' in settings else DEFAULT_NOTIFICATIONS.error,
         warning=settings['SEND_WARNING'] if 'SEND_WARNING' in settings else DEFAULT_NOTIFICATIONS.warning,
@@ -89,4 +90,8 @@ def parse_settings(settings: Dict):
         debug=settings['SEND_DEBUG'] if 'SEND_DEBUG' in settings else DEFAULT_NOTIFICATIONS.debug,
         entry=settings['SEND_ENTRY'] if 'SEND_ENTRY' in settings else DEFAULT_NOTIFICATIONS.entry,
         close=settings['SEND_CLOSE'] if 'SEND_CLOSE' in settings else DEFAULT_NOTIFICATIONS.close,
-    )
+        )
+    except Exception as e:
+        print("Error with config file.  Do you have commas after each SEND_XXX?  If so, remove them.")
+    return settings
+

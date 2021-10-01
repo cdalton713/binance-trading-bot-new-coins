@@ -5,6 +5,26 @@ This trading bot detects new coins as soon as they are listed on various exchang
 
 It comes with a live and test mode, so naturally, use it at your own risk.
 
+# Requirements:
+- Python 3.9 is required
+
+### This project now uses submodules!
+####The program _should_ auto install everything for you, but if not:
+#### How to Clone With Submodules:
+1. `git clone --recurse-submodules https://github.com/cdalton713/trading-bot-new-coins`
+
+#### I Cloned Prior to This Change:
+1. cd into directory
+2. `git submodule init`
+3. `git submodule update`
+
+#### A New Update Is Out:
+1. cd into directory
+2. `git submodule init`
+3. `git submodule update`
+
+***Why?** I realize this is slightly inconvenient, but I need some parts of this project for other things!  Submodules allow me to share components across different projects.
+
 ## How to Set Up Notifications:
 ### Discord:
 You must have permissions to create a `webhoook` on your chosen Discord server. 

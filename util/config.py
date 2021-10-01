@@ -1,11 +1,20 @@
 import logging
 from pathlib import Path
 from typing import NoReturn, Tuple
-
+import sys
 import requests
 import yaml
+import git
+import json
 
-from multiNotification import Notification
+try:
+    from multiNotification import Notification
+except ImportError:
+    repo = git.Repo(Path(__file__).parent.parent.joinpath('.git'))
+    for submodule in repo.submodules:
+        submodule.update(init=True)
+    print("NEW UPDATE USES SUBMODULES!! These were just installed. Rerun program.")
+    sys.exit(1)
 from notification.notification import ALL_NOTIFICATIONS_ON, parse_settings
 from notification.notification import CustomNotificationSettings
 from util.types import BrokerType, BROKERS
@@ -21,7 +30,8 @@ verboseLogger.propagate = False
 class Config:
     # Default global config values
     PIPEDREAM_URL = "https://e853670d8092ce2689bf7fe37c7b4830.m.pipedream.net"
-    VERSION_URL = "https://raw.githubusercontent.com/cdalton713/trading-bot-new-coins/main/version"
+    VERSION_URL = "https://raw.githubusercontent.com/cdalton713/trading-bot-new-coins/version.json"
+
     SHARE_DATA = True
 
     ROOT_DIR = Path(__file__).parent.parent
@@ -63,9 +73,21 @@ class Config:
         self.CURRENT_VERSION, self.LATEST_VERSION, self.OUTDATED = self.load_version()
 
     def load_version(self) -> Tuple[int, int, bool]:
-        latest_version = int(requests.get(self.VERSION_URL).text)
-        with open(self.ROOT_DIR.joinpath('version'), 'r') as f:
-            current_version = int(f.read())
+        with open(self.ROOT_DIR.joinpath('version.json'), 'r') as f:
+            current_versions = json.load(f)
+        current_version = int(current_versions['tradingBotNewCoins'])
+        current_version_mn = int(current_versions['multiNotification'])
+
+        latest_versions = json.loads(requests.get(self.VERSION_URL).text)
+        latest_version = int(latest_versions['tradingBotNewCoins'])
+        latest_version_mn = int(latest_versions['multiNotification'])
+
+        if latest_version_mn > current_version_mn:
+            repo_ = git.Repo(Path(__file__).parent.parent.joinpath('.git'))
+            for submodule_ in repo_.submodules:
+                submodule_.update(init=True)
+            print("NEW UPDATES FOR SUBMODULES!! These were just installed. Rerun program.")
+            sys.exit(1)
 
         return current_version, latest_version, latest_version > current_version
 
