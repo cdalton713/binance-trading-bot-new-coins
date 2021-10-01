@@ -53,7 +53,7 @@ class Util:
             },
             "loggers": {
                 "": {"handlers": ["default"], "level": level},
-                "error_log": {"handlers": ["default", "error_file"], "level": level},
+                "error_log": {"handlers": ["default", "error_file"], "level": 'ERROR'},
                 "verbose_log": {
                     "handlers": ["default", "verbose_file"],
                     "level": "DEBUG",

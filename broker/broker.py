@@ -131,7 +131,7 @@ class FTX(FtxClient, Broker):
     )
     @FtxClient.authentication_required
     def get_current_price(self, ticker: Ticker):
-        Config.NOTIFICATION_SERVICE.send_debug(
+        Config.NOTIFICATION_SERVICE.debug(
             "Getting latest price for [{}]".format(ticker.ticker)
         )
         try:
@@ -139,7 +139,7 @@ class FTX(FtxClient, Broker):
 
             if resp is None:
                 raise GetPriceNoneResponse("None Response from Get Price")
-            Config.NOTIFICATION_SERVICE.send_info(
+            Config.NOTIFICATION_SERVICE.info(
                 "FTX Price - {} {}".format(ticker.ticker, round(resp, 4))
             )
             return resp
@@ -229,7 +229,7 @@ class Binance(BinanceClient, Broker):
         logger,
     )
     def get_current_price(self, ticker: Ticker) -> float:
-        Config.NOTIFICATION_SERVICE.send_debug(
+        Config.NOTIFICATION_SERVICE.debug(
             "Getting latest price for [{}]".format(ticker)
         )
         return float(self.get_symbol_ticker(symbol=ticker.ticker)["price"])

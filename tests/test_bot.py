@@ -1,12 +1,14 @@
-from unittest import TestCase
-from bot import Bot
-from util.types import Order, Ticker, Notification, NotificationAuth
-from util import Util
-from util import Config
 import logging
-from notification import NotificationService
 from time import sleep
+from unittest import TestCase
+
 from binance.exceptions import BinanceAPIException
+
+from bot import Bot
+from notification.notification import pretty_close, pretty_entry
+from util import Config
+from util import Util
+from util.types import Ticker
 
 # setup logging
 Util.setup_logging(name="new-coin-bot", level="DEBUG")
@@ -164,30 +166,19 @@ class TestBot(TestCase):
             self.assertDictEqual(expected, self.FTX.sold)
 
     def test_notifications(self):
-
-        NotificationService.DEFAULT_SETTINGS = {
-            "SEND_MESSAGE": True,
-            "SEND_ERROR": True,
-            "SEND_VERBOSE": True,
-            "SEND_WARNING": True,
-            "SEND_INFO": True,
-            "SEND_DEBUG": True,
-            "SEND_ENTRY": True,
-            "SEND_CLOSE": True,
-        }
         Config.load_global_config()
 
-        Config.NOTIFICATION_SERVICE.send_message("send_message test")
+        Config.NOTIFICATION_SERVICE.message("send_message test")
         sleep(0.1)
-        Config.NOTIFICATION_SERVICE.send_error("send_error test")
+        Config.NOTIFICATION_SERVICE.error("send_error test")
         sleep(0.1)
-        Config.NOTIFICATION_SERVICE.send_verbose("send_verbose test")
+        Config.NOTIFICATION_SERVICE.get_service('VERBOSE_FILE').error("send_verbose test")
         sleep(0.1)
-        Config.NOTIFICATION_SERVICE.send_warning("send_warning test")
+        Config.NOTIFICATION_SERVICE.warning("send_warning test")
         sleep(0.1)
-        Config.NOTIFICATION_SERVICE.send_info("send_info test")
+        Config.NOTIFICATION_SERVICE.info("send_info test")
         sleep(0.1)
-        Config.NOTIFICATION_SERVICE.send_debug("send_debug test")
+        Config.NOTIFICATION_SERVICE.debug("send_debug test")
         sleep(0.1)
 
         tickers, ticker_dict = self.FTX.get_starting_tickers()
@@ -198,22 +189,19 @@ class TestBot(TestCase):
 
         for new_ticker in new_tickers:
             self.FTX.process_new_ticker(new_ticker)
-
-        Config.NOTIFICATION_SERVICE.send_entry(self.FTX.orders["BTC/USDT"])
+        Config.NOTIFICATION_SERVICE.message('ENTRY', pretty_entry, (self.FTX.orders["BTC/USDT"],))
         sleep(0.1)
-        Config.NOTIFICATION_SERVICE.send_close(self.FTX.orders["BTC/USDT"])
+        Config.NOTIFICATION_SERVICE.message('CLOSE', pretty_close, (self.FTX.orders["BTC/USDT"],))
         sleep(0.1)
-        Config.NOTIFICATION_SERVICE.send_entry(
-            self.FTX.orders["BTC/USDT"], custom=True, comment="Custom Entry Comment"
-        )
+        Config.NOTIFICATION_SERVICE.message('ENTRY', pretty_entry, (
+            self.FTX.orders["BTC/USDT"],), fn_kwargs={'custom': True, 'comment': "Custom Entry Comment"})
 
     def test_github_failed(self):
         Config.load_global_config()
-        new_tickers = [Ticker(ticker='YGGUSDT', base_ticker='YGG', quote_ticker='USDT'), Ticker(ticker='SYSUSDT', base_ticker='SYS', quote_ticker='USDT')]
+        new_tickers = [Ticker(ticker='YGGUSDT', base_ticker='YGG', quote_ticker='USDT'),
+                       Ticker(ticker='SYSUSDT', base_ticker='SYS', quote_ticker='USDT')]
         for new_ticker in new_tickers:
             self.Binance.process_new_ticker(new_ticker)
-
-
 
     # LEAVE OFF, PLEASE DON'T SPAM MY ACCOUNT :)
 
