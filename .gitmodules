@@ -1,0 +1,3 @@
+[submodule "multiNotification"]
+	path = multiNotification
+	url = https://github.com/cdalton713/multi-notification

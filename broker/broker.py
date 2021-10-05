@@ -131,7 +131,7 @@ class FTX(FtxClient, Broker):
     )
     @FtxClient.authentication_required
     def get_current_price(self, ticker: Ticker):
-        Config.NOTIFICATION_SERVICE.send_debug(
+        Config.NOTIFICATION_SERVICE.debug(
             "Getting latest price for [{}]".format(ticker.ticker)
         )
         try:
@@ -139,7 +139,7 @@ class FTX(FtxClient, Broker):
 
             if resp is None:
                 raise GetPriceNoneResponse("None Response from Get Price")
-            Config.NOTIFICATION_SERVICE.send_info(
+            Config.NOTIFICATION_SERVICE.info(
                 "FTX Price - {} {}".format(ticker.ticker, round(resp, 4))
             )
             return resp
@@ -229,7 +229,7 @@ class Binance(BinanceClient, Broker):
         logger,
     )
     def get_current_price(self, ticker: Ticker) -> float:
-        Config.NOTIFICATION_SERVICE.send_debug(
+        Config.NOTIFICATION_SERVICE.debug(
             "Getting latest price for [{}]".format(ticker)
         )
         return float(self.get_symbol_ticker(symbol=ticker.ticker)["price"])
@@ -250,6 +250,12 @@ class Binance(BinanceClient, Broker):
         kwargs["symbol"] = kwargs["ticker"].ticker
         kwargs["type"] = "market"
         kwargs["quantity"] = kwargs["size"]
+        kwargs['side'] = kwargs['side'].upper()
+        if kwargs['side'] == 'SELL':
+            step_size = float(self.get_symbol_info(kwargs['symbol'])['filters'][2]['stepSize'])
+            reduce_amount = kwargs['quantity'] * 0.01
+
+            kwargs['quantity'] = kwargs['quantity'] - max(step_size, reduce_amount)
 
         params = {}
         for p in ["quantity", "side", "symbol", "type"]:
@@ -281,21 +287,21 @@ class Binance(BinanceClient, Broker):
             return Order(
                 broker="BINANCE",
                 ticker=kwargs["symbol"],
-                purchase_datetime=parse(api_resp["transactTime"]),
+                purchase_datetime=datetime.now(),
                 price=api_resp["price"],
                 side=api_resp["side"],
                 size=api_resp["executedQty"],
                 type="market",
                 status="TEST_MODE" if Config.TEST else "LIVE",
                 take_profit=Util.percent_change(
-                    api_resp["price"], config.TAKE_PROFIT_PERCENT
+                    float(api_resp["price"]), config.TAKE_PROFIT_PERCENT
                 ),
                 stop_loss=Util.percent_change(
-                    api_resp["price"], -config.STOP_LOSS_PERCENT
+                    float(api_resp["price"]), -config.STOP_LOSS_PERCENT
                 ),
                 trailing_stop_loss_max=float("-inf"),
                 trailing_stop_loss=Util.percent_change(
-                    api_resp["price"], -config.TRAILING_STOP_LOSS_PERCENT
+                    float(api_resp["price"]), -config.TRAILING_STOP_LOSS_PERCENT
                 ),
             )
 

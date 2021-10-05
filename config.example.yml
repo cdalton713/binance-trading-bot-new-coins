@@ -48,28 +48,28 @@ PROGRAM_OPTIONS:
 NOTIFICATION_OPTIONS:
   DISCORD:
     ENABLED: True
+    NAME: 'DISCORD'
     SETTINGS:
-      SEND_MESSAGE: True,
-      SEND_ERROR: True,
-      SEND_VERBOSE: False,
-      SEND_WARNING: False,
-      SEND_INFO: False,
-      SEND_DEBUG: False,
-      SEND_ENTRY: True,
-      SEND_CLOSE: True,
+      SEND_MESSAGE: True
+      SEND_ERROR: True
+      SEND_WARNING: False
+      SEND_INFO: False
+      SEND_DEBUG: False
+      SEND_ENTRY: True
+      SEND_CLOSE: True
     AUTH:
       ENDPOINT: 'https://discord.com/api/webhooks/<...> -> Read readme for more info'
   TELEGRAM:
     ENABLED: True
+    NAME: 'TELEGRAM'
     SETTINGS:
-      SEND_MESSAGE: True,
-      SEND_ERROR: True,
-      SEND_VERBOSE: False,
-      SEND_WARNING: False,
-      SEND_INFO: False,
-      SEND_DEBUG: False,
-      SEND_ENTRY: True,
-      SEND_CLOSE: True,
+      SEND_MESSAGE: True
+      SEND_ERROR: True
+      SEND_WARNING: False
+      SEND_INFO: False
+      SEND_DEBUG: False
+      SEND_ENTRY: True
+      SEND_CLOSE: True
     AUTH:
       ENDPOINT: 'TOKEN -> Read readme for more info'
       CHAT_ID: '-XXXXXX -> Read readme for more info'
