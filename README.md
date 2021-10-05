@@ -64,6 +64,10 @@ I would love contributors! Please send a pull request, and I will review it.
 Please include any applicable stack traces and logs.  There are currently two log files: `errors.log` and `verbose_log.log`.  Please also attach any relevant information from these files.
 
 ## Changelog:
+- 2021-10-05:
+  1. Bugs with live Binance fixed
+  2. Notifications moved into a submodule for other projects
+
 - 2021-09-30:
   1. Fixed Save issue ([#6](https://github.com/cdalton713/trading-bot-new-coins/issues/6)).
   2. Removed retry option from purchases. Possible fix for [#5](https://github.com/cdalton713/trading-bot-new-coins/issues/5).
