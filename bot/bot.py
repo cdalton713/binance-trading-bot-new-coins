@@ -51,7 +51,8 @@ class Bot:
                 )
 
                 for key, stored_order in self.orders.items():
-                    self.update(key, stored_order)
+                    if key not in self.sold:
+                        self.update(key, stored_order)
 
             # remove pending removals
             [self.orders.pop(o) for o in self._pending_remove]
