@@ -232,8 +232,8 @@ class Bot:
             stop_loss=sell.stop_loss,
             trailing_stop_loss_max=sell.trailing_stop_loss_max,
             trailing_stop_loss=sell.trailing_stop_loss,
-            profit=current_price - stored_price,
-            profit_percent=(current_price - stored_price) / stored_price * 100,
+            profit=(current_price * sell.size) - (stored_price * order.price),
+            profit_percent=((current_price * sell.size) - (stored_price * order.price)) / (stored_price * order.price) * 100,
             sold_datetime=sell.purchase_datetime,
         )
 

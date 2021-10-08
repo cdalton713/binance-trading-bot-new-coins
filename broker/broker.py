@@ -286,7 +286,7 @@ class Binance(BinanceClient, Broker):
             api_resp = super(Binance, self).create_order(**params)
             return Order(
                 broker="BINANCE",
-                ticker=kwargs["symbol"],
+                ticker=kwargs["ticker"],
                 purchase_datetime=datetime.now(),
                 price=api_resp["price"],
                 side=api_resp["side"],
