@@ -64,6 +64,9 @@ I would love contributors! Please send a pull request, and I will review it.
 Please include any applicable stack traces and logs.  There are currently two log files: `errors.log` and `verbose_log.log`.  Please also attach any relevant information from these files.
 
 ## Changelog:
+- 2021-10-11:
+  1. Binance order price response fix
+
 - 2021-10-05:
   1. Bugs with live Binance fixed
   2. Notifications moved into a submodule for other projects

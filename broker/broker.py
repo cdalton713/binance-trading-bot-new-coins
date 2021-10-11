@@ -284,11 +284,21 @@ class Binance(BinanceClient, Broker):
             )
         else:
             api_resp = super(Binance, self).create_order(**params)
+
+            fill_sum = 0
+            fill_count = 0
+
+            for fill in api_resp['fills']:
+                fill_sum += (fill['price'] - fill['commission'])
+                fill_count += fill['qty']
+
+            avg_fill_price = fill_sum / fill_count
+
             return Order(
                 broker="BINANCE",
                 ticker=kwargs["ticker"],
                 purchase_datetime=datetime.now(),
-                price=api_resp["price"],
+                price=avg_fill_price,
                 side=api_resp["side"],
                 size=api_resp["executedQty"],
                 type="market",
