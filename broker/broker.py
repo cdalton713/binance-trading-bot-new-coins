@@ -252,10 +252,11 @@ class Binance(BinanceClient, Broker):
         kwargs["quantity"] = kwargs["size"]
         kwargs['side'] = kwargs['side'].upper()
         if kwargs['side'] == 'SELL':
-            step_size = float(self.get_symbol_info(kwargs['symbol'])['filters'][2]['stepSize'])
+            symbol_info = self.get_symbol_info(kwargs['symbol'])
+            step_size = float(symbol_info['filters'][2]['stepSize'])
             reduce_amount = kwargs['quantity'] * 0.01
 
-            kwargs['quantity'] = kwargs['quantity'] - max(step_size, reduce_amount)
+            kwargs['quantity'] = round(kwargs['quantity'] - max(step_size, reduce_amount), symbol_info['baseAssetPrecision'])
 
         params = {}
         for p in ["quantity", "side", "symbol", "type"]:
@@ -284,13 +285,13 @@ class Binance(BinanceClient, Broker):
             )
         else:
             api_resp = super(Binance, self).create_order(**params)
-
+            Config.NOTIFICATION_SERVICE.get_service('VERBOSE_FILE').error(api_resp)
             fill_sum = 0
             fill_count = 0
 
             for fill in api_resp['fills']:
-                fill_sum += (fill['price'] - fill['commission'])
-                fill_count += fill['qty']
+                fill_sum += (float(fill['price']) - float(fill['commission']))
+                fill_count += float(fill['qty'])
 
             avg_fill_price = fill_sum / fill_count
 
