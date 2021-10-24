@@ -38,7 +38,7 @@ class Config:
     AUTH_DIR = ROOT_DIR.joinpath("auth")
     TEST_DIR = ROOT_DIR.joinpath("tests")
 
-    FREQUENCY_SECONDS = 10
+    FREQUENCY_SECONDS = 2
     TEST = True
     ENABLED_BROKERS = []
 

@@ -1,19 +1,20 @@
+import logging
 from abc import ABC, abstractmethod
-from typing import Dict, Any, NoReturn, List
+from datetime import datetime
+from typing import NoReturn, List
+from typing import Union
 
 import binance.exceptions
-from ftx.api import FtxClient
-from binance.client import Client as BinanceClient
-from datetime import datetime
-from typing import Union
-from util.types import BrokerType, Ticker, Order
-from util.exceptions import *
-from util import Config, Util
-from dateutil.parser import parse
-from util.decorators import retry
-import yaml
 import requests
-import logging
+import yaml
+from binance.client import Client as BinanceClient
+from dateutil.parser import parse
+from ftx.api import FtxClient
+
+from util import Config, Util
+from util.decorators import retry
+from util.exceptions import *
+from util.types import BrokerType, Ticker, Order
 
 logger = logging.getLogger(__name__)
 
@@ -213,8 +214,59 @@ class FTX(FtxClient, Broker):
 class Binance(BinanceClient, Broker):
     def __init__(self, subaccount: str, key: str, secret: str) -> NoReturn:
         self.brokerType = "BINANCE"
+        self._rate_limit = 1200
+
+        self._api_count = 0
+        self._api_call_rate = 0
+        self._api_count_reset = False
+        self._frequency_reset = False
+        self._api_rate_start = None
 
         super().__init__(api_key=key, api_secret=secret)
+
+    def _rate_calculation(self):
+        now_ = datetime.now()
+
+        if self._api_rate_start is None:
+            seconds_diff = 1
+        else:
+            seconds_diff = (now_ - self._api_rate_start).total_seconds() % 60
+        # print(seconds_diff)
+
+        if self._api_rate_start is None:
+            self._api_rate_start = now_
+            self._frequency_reset = True
+        elif seconds_diff > 58 and not self._api_count_reset:
+            self._api_count = 0
+            self._api_count_reset = True
+        elif seconds_diff < 2:
+            self._api_count_reset = False
+        elif 20 < seconds_diff % 60 < 22:
+            self._frequency_reset = False
+
+        self._api_count += 1
+        try:
+            self._api_call_rate = (self._api_count / seconds_diff) * 60
+        except ZeroDivisionError:
+            self._api_call_rate = 1
+
+        if self._api_call_rate > (self._rate_limit * 0.9) and not self._frequency_reset:
+            Config.FREQUENCY_SECONDS += 0.02
+            self._frequency_reset = True
+        elif self._api_call_rate < (self._rate_limit * 0.5) and not self._frequency_reset:
+            Config.FREQUENCY_SECONDS -= 0.1
+            self._frequency_reset = True
+        elif self._api_call_rate < (self._rate_limit * 0.8) and not self._frequency_reset:
+            Config.FREQUENCY_SECONDS -= 0.05
+            self._frequency_reset = True
+        elif self._api_call_rate < (self._rate_limit * 0.8) and not self._frequency_reset:
+            Config.FREQUENCY_SECONDS -= 0.02
+            self._frequency_reset = True
+
+        if Config.FREQUENCY_SECONDS == 0:
+            Config.FREQUENCY_SECONDS = 0.01
+
+        print(self._api_call_rate)
 
     @retry(
         (
@@ -336,7 +388,7 @@ class Binance(BinanceClient, Broker):
                         quote_ticker=ticker["quoteAsset"],
                     )
                 )
-
+        self._rate_calculation()
         return resp
 
     def convert_size(self, config: Config, ticker: Ticker, price: float) -> float:
