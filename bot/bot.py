@@ -5,7 +5,7 @@ from broker import Broker
 from notification.notification import pretty_entry, pretty_close
 from util import Config
 from util import Util
-from util.types import BrokerType, Ticker, Order, Sold
+from util.models import BrokerType, Ticker, Order, Sold
 
 
 class Bot:
@@ -232,8 +232,8 @@ class Bot:
             stop_loss=sell.stop_loss,
             trailing_stop_loss_max=sell.trailing_stop_loss_max,
             trailing_stop_loss=sell.trailing_stop_loss,
-            profit=(current_price * sell.size) - (stored_price * order.price),
-            profit_percent=((current_price * sell.size) - (stored_price * order.price)) / (stored_price * order.price) * 100,
+            profit=(current_price * sell.size) - (stored_price * order.size),
+            profit_percent=((current_price * sell.size) - (stored_price * order.size)) / (stored_price * order.size) * 100,
             sold_datetime=sell.purchase_datetime,
         )
 
@@ -262,11 +262,6 @@ class Bot:
                 f"[{self.broker.brokerType}]\tPreparing to buy {new_ticker.ticker}"
             )
 
-            price = self.broker.get_current_price(new_ticker)
-            size = self.broker.convert_size(
-                config=self.config, ticker=new_ticker, price=price
-            )
-
             try:
 
                 Config.NOTIFICATION_SERVICE.info(
@@ -276,9 +271,20 @@ class Bot:
                     f"[{self.broker.brokerType}]\tPlacing [{'TEST' if self.config.TEST else 'LIVE'}] Order.."
                 )
 
-                order = self.broker.place_order(
-                    self.config, ticker=new_ticker, size=size, side="BUY", **kwargs
-                )
+                if self.broker.brokerType == "FTX":
+                    price = self.broker.get_current_price(new_ticker)
+                    size = self.broker.convert_size(
+                        config=self.config, ticker=new_ticker, price=price
+                    )
+
+                    order = self.broker.place_order(
+                        self.config, ticker=new_ticker, side="BUY", size=size, **kwargs
+                    )
+
+                else:
+                    order = self.broker.place_order(
+                        self.config, ticker=new_ticker, side="BUY", **kwargs
+                    )
 
                 Config.NOTIFICATION_SERVICE.get_service('VERBOSE_FILE').error(
                     "ORDER RESPONSE:\n{}".format(order.json())

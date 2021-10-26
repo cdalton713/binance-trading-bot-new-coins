@@ -8,7 +8,7 @@ import requests
 from requests import Response
 from pydantic import BaseModel
 from datetime import date, datetime
-from util.types import Sold, Order
+from util.models import Sold, Order
 from json.decoder import JSONDecodeError
 
 class Util:

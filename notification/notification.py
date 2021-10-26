@@ -1,7 +1,7 @@
 from typing import Dict, Tuple, Optional
 from multiNotification import Notification
 from multiNotification.notification.models import NotificationSettings
-from util.types import Order
+from util.models import Order
 
 
 def pretty_format_message(order: Order) -> str:

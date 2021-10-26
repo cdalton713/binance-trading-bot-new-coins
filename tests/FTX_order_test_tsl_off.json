@@ -1,0 +1,20 @@
+{
+    "BTC/USDT": {
+        "broker": "FTX",
+        "ticker": {
+            "ticker": "BTC/USDT",
+            "base_ticker": "BTC",
+            "quote_ticker": "USDT"
+        },
+        "purchase_datetime": "2021-08-29T19:49:08.441705",
+        "price": 48672.73020676,
+        "side": "BUY",
+        "size": 0.0006186715060526696,
+        "type": "market",
+        "status": "TEST_MODE",
+        "take_profit": 58407.276248112,
+        "stop_loss": 47036.27,
+        "trailing_stop_loss_max": -Infinity,
+        "trailing_stop_loss": 47521.18
+    }
+}

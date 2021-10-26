@@ -1,14 +1,14 @@
 import logging
-from time import sleep
+from typing import Dict
 from unittest import TestCase
 
 from binance.exceptions import BinanceAPIException
 
+import util.models
 from bot import Bot
-from notification.notification import pretty_close, pretty_entry
 from util import Config
 from util import Util
-from util.types import Ticker
+from util.models import Ticker
 
 # setup logging
 Util.setup_logging(name="new-coin-bot", level="DEBUG")
@@ -113,55 +113,59 @@ class TestBot(TestCase):
         pass
 
     def test_update_below_sl(self):
-        self.FTX.orders = Util.load_pickle(Config.TEST_DIR.joinpath("FTX_order_test"))
+        self.FTX.orders = Util.load_json(Config.TEST_DIR.joinpath("FTX_order_test.json"),
+                                         util.models.Order)
 
         for key, value in self.FTX.orders.items():
             self.FTX.update(key, value, current_price=30000)
 
-            expected = Util.load_pickle(
-                Config.TEST_DIR.joinpath("FTX_order_test_update_below_sl_expected")
+            expected = Util.load_json(
+                Config.TEST_DIR.joinpath("FTX_order_test_update_below_sl_expected.json"), util.models.Sold
             )
             expected["BTC/USDT"].sold_datetime = self.FTX.sold["BTC/USDT"].sold_datetime
             self.assertDictEqual(expected, self.FTX.sold)
 
     def test_update_above_max(self):
-        self.FTX.orders = Util.load_pickle(Config.TEST_DIR.joinpath("FTX_order_test"))
+        self.FTX.orders = Util.load_json(Config.TEST_DIR.joinpath("FTX_order_test.json"),
+                                         util.models.Order)
+
         self.FTX.config.TRAILING_STOP_LOSS_PERCENT = 2
 
         for key, value in self.FTX.orders.items():
             self.FTX.update(key, value, current_price=60000)
 
-            expected = Util.load_pickle(
-                Config.TEST_DIR.joinpath("FTX_order_test_update_above_max_expected")
-            )
+            expected = Util.load_json(Config.TEST_DIR.joinpath("FTX_order_test_update_above_max_expected.json"),
+                                      util.models.Order)
             self.assertDictEqual(expected, self.FTX.orders)
 
     def test_update_above_tp(self):
         self.FTX.config.ENABLE_TRAILING_STOP_LOSS = False
 
-        self.FTX.orders = Util.load_pickle(
-            Config.TEST_DIR.joinpath("FTX_order_test_tsl_off")
+        self.FTX.orders = Util.load_json(
+            Config.TEST_DIR.joinpath("FTX_order_test_tsl_off.json"), util.models.Order
         )
 
         for key, value in self.FTX.orders.items():
             self.FTX.update(key, value, current_price=60000)
 
-            expected = Util.load_pickle(
-                Config.TEST_DIR.joinpath("FTX_order_test_update_above_tp_expected")
-            )
+            expected: Dict[str, util.models.Sold] = Util.load_json(
+                Config.TEST_DIR.joinpath("FTX_order_test_update_above_tp_expected.json"), util.models.Sold)
+
             expected["BTC/USDT"].sold_datetime = self.FTX.sold["BTC/USDT"].sold_datetime
             self.assertDictEqual(expected, self.FTX.sold)
 
     def test_update_below_tsl(self):
-        self.FTX.orders = Util.load_pickle(Config.TEST_DIR.joinpath("FTX_order_test"))
+        self.FTX.orders = Util.load_json(Config.TEST_DIR.joinpath("FTX_order_test.json"),
+                                         util.models.Order)
 
         for key, value in self.FTX.orders.items():
             self.FTX.update(key, value, current_price=60000)
             self.FTX.update(key, value, current_price=25000)
 
-            expected = Util.load_pickle(
-                Config.TEST_DIR.joinpath("FTX_order_test_update_below_tsl_expected")
-            )
+            expected: Dict[str, util.models.Sold] = Util.load_json(
+                Config.TEST_DIR.joinpath("FTX_order_test_update_below_tsl_expected.json"),
+                util.models.Sold)
+
             expected["BTC/USDT"].sold_datetime = self.FTX.sold["BTC/USDT"].sold_datetime
             self.assertDictEqual(expected, self.FTX.sold)
 
