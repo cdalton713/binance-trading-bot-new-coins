@@ -11,6 +11,8 @@ Config.load_global_config()
 # setup logging
 Util.setup_logging(name="new-coin-bot", level=Config.PROGRAM_OPTIONS["LOG_LEVEL"])
 
+total_time = 0
+total_iter = 0
 
 def setup() -> List[Bot]:
     Config.NOTIFICATION_SERVICE.info("Creating bots..")
@@ -30,12 +32,17 @@ async def forever(routines: List):
     while True:
         t = time.time()
         await main(routines)
+        time_taken = time.time() - t
         Config.NOTIFICATION_SERVICE.debug(
-            "Loop finished in [{}] seconds".format(time.time() - t)
+            "Loop finished in [{}] seconds".format(time_taken)
         )
         Config.NOTIFICATION_SERVICE.debug(
             "Sleeping for [{}] seconds".format(Config.FREQUENCY_SECONDS)
         )
+
+        Config.total_time += time_taken
+        Config.total_iter += 1
+
         await asyncio.sleep(Config.FREQUENCY_SECONDS)
 
 
@@ -61,3 +68,5 @@ if __name__ == "__main__":
     finally:
         for bot in bots:
             bot.save()
+        print("AVG TIME PER LOOP: {}".format(Config.total_time / Config.total_iter))
+        print("TOTAL LOOPS: {}".format(Config.total_iter))
