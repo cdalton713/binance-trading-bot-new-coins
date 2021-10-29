@@ -4,6 +4,13 @@ TRADE_OPTIONS:
   FREQUENCY_SECONDS: 5
   TEST: True
 
+  #  In theory, Binance/FTX will add a new coin at the start of a minute.
+  # Enabling this option will have the program continuously query the APIs for 'FRONTLOAD_DURATION' seconds starting at
+  # the 57th second of each minute.  A 'FRONTLOAD_DURATION' of 8 would query the API from 00:57 until 01:05.
+  FRONTLOAD_REQUESTS:
+    FRONTLOAD_ENABLED: True
+    FRONTLOAD_DURATION: 8
+
   #  Brokers to run.  Make sure to set API keys in auth.yml
   BROKERS:
     BINANCE:
