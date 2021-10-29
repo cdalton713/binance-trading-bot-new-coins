@@ -4,7 +4,7 @@ import time
 from util import Config, Util
 from bot import Bot
 import traceback
-from pathlib import Path
+from datetime import datetime
 
 Config.load_global_config()
 
@@ -30,14 +30,33 @@ def setup() -> List[Bot]:
 
 async def forever(routines: List):
     while True:
+        current_second = datetime.now().second
+
+        if Config.FRONTLOAD_ENABLED:
+            while current_second >= 57 or current_second <= Config.FRONTLOAD_DURATION - 2:
+                # FRONTLOAD PERIOD
+                t = time.time()
+                await main(routines)
+                current_second = datetime.now().second
+                Config.NOTIFICATION_SERVICE.debug(
+                    "Loop finished in [{}] seconds".format(time.time() - t)
+                )
+
+        # STANDARD PERIOD
         t = time.time()
         await main(routines)
         time_taken = time.time() - t
         Config.NOTIFICATION_SERVICE.debug(
             "Loop finished in [{}] seconds".format(time_taken)
         )
+
+        if current_second + Config.FREQUENCY_SECONDS > 57:
+            sleep_time = 57 - current_second
+        else:
+            sleep_time = Config.FREQUENCY_SECONDS
+
         Config.NOTIFICATION_SERVICE.debug(
-            "Sleeping for [{}] seconds".format(Config.FREQUENCY_SECONDS)
+            "Sleeping for [{}] seconds".format(sleep_time)
         )
 
         Config.total_time += time_taken

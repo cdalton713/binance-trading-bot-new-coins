@@ -6,7 +6,7 @@ from ftx.api import FtxClient
 from binance.client import Client as BinanceClient
 from datetime import datetime
 from typing import Union
-from util.types import BrokerType, Ticker, Order
+from util.models import BrokerType, Ticker, Order
 from util.exceptions import *
 from util import Config, Util
 from dateutil.parser import parse
@@ -249,17 +249,11 @@ class Binance(BinanceClient, Broker):
     def place_order(self, config: Config, *args, **kwargs) -> Order:
         kwargs["symbol"] = kwargs["ticker"].ticker
         kwargs["type"] = "market"
-        kwargs["quantity"] = kwargs["size"]
+        kwargs["quoteOrderQty"] = float(config.QUANTITY)
         kwargs['side'] = kwargs['side'].upper()
-        if kwargs['side'] == 'SELL':
-            symbol_info = self.get_symbol_info(kwargs['symbol'])
-            step_size = float(symbol_info['filters'][2]['stepSize'])
-            reduce_amount = kwargs['quantity'] * 0.01
-
-            kwargs['quantity'] = round(kwargs['quantity'] - max(step_size, reduce_amount), symbol_info['baseAssetPrecision'])
 
         params = {}
-        for p in ["quantity", "side", "symbol", "type"]:
+        for p in ["quoteOrderQty", "side", "symbol", "type"]:
             params[p] = kwargs[p]
 
         if Config.TEST:
@@ -273,11 +267,11 @@ class Binance(BinanceClient, Broker):
                 purchase_datetime=datetime.now(),
                 price=price,
                 side=kwargs["side"],
-                size=kwargs["size"],
+                size=config.QUANTITY / price,
                 type="market",
                 status="TEST_MODE",
                 take_profit=Util.percent_change(price, config.TAKE_PROFIT_PERCENT),
-                stop_loss=Util.percent_change(price, -config.STOP_LOSS_PERCENT),
+                stop_loss=Util.percent_change(price, - config.STOP_LOSS_PERCENT),
                 trailing_stop_loss_max=float("-inf"),
                 trailing_stop_loss=Util.percent_change(
                     price, -config.TRAILING_STOP_LOSS_PERCENT
@@ -308,11 +302,11 @@ class Binance(BinanceClient, Broker):
                     float(api_resp["price"]), config.TAKE_PROFIT_PERCENT
                 ),
                 stop_loss=Util.percent_change(
-                    float(api_resp["price"]), -config.STOP_LOSS_PERCENT
+                    float(api_resp["price"]), - config.STOP_LOSS_PERCENT
                 ),
                 trailing_stop_loss_max=float("-inf"),
                 trailing_stop_loss=Util.percent_change(
-                    float(api_resp["price"]), -config.TRAILING_STOP_LOSS_PERCENT
+                    float(api_resp["price"]), - config.TRAILING_STOP_LOSS_PERCENT
                 ),
             )
 

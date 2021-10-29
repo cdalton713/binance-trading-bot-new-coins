@@ -17,7 +17,7 @@ except ImportError:
     sys.exit(1)
 from notification.notification import ALL_NOTIFICATIONS_ON, parse_settings
 from notification.notification import CustomNotificationSettings
-from util.types import BrokerType, BROKERS
+from util.models import BrokerType, BROKERS
 
 logger = logging.getLogger(__name__)
 errLogger = logging.getLogger("error_log")
@@ -41,6 +41,10 @@ class Config:
     TEST_DIR = ROOT_DIR.joinpath("tests")
 
     FREQUENCY_SECONDS = 10
+
+    FRONTLOAD_ENABLED: True
+    FRONTLOAD_DURATION = 7
+
     TEST = True
     ENABLED_BROKERS = []
 
@@ -109,6 +113,9 @@ class Config:
                             for broker_key, broker_options in trade_option.items():
                                 if broker_options["ENABLED"]:
                                     Config.ENABLED_BROKERS.append(broker_key)
+                        elif trade_key == 'FRONTLOAD_REQUESTS':
+                            for frontload_key, frontload_option in trade_option.items():
+                                setattr(Config, frontload_key, frontload_option)
                         else:
                             if not hasattr(Config, trade_key):
                                 logger.warning(
