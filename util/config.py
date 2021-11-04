@@ -30,7 +30,7 @@ verboseLogger.propagate = False
 class Config:
     # Default global config values
     PIPEDREAM_URL = "https://e853670d8092ce2689bf7fe37c7b4830.m.pipedream.net"
-    VERSION_URL = "https://raw.githubusercontent.com/cdalton713/trading-bot-new-coins/dev/version.json"
+    VERSION_URL = "https://raw.githubusercontent.com/cdalton713/trading-bot-new-coins/main/version.json"
 
     SHARE_DATA = True
 
