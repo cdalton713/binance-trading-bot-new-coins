@@ -19,19 +19,23 @@ class Bot:
         self.all_tickers, self.ticker_seen_dict = self.get_starting_tickers()
 
         # create / load files
-        self.orders: Dict[str, Order] = {}
-        self.orders_file = None
+        self.open_orders: Dict[str, Order] = {}
+        self.open_orders_file = None
 
         self.sold: Dict[str, Sold] = {}
         self.sold_file = None
 
-        for f in ["orders", "sold"]:
+        self.order_history: List[Dict[str, Order]] = []
+        self.order_history_file = None
+
+        for f in ["open_orders", "sold", "order_history"]:
             file = Config.ROOT_DIR.joinpath(f"{self.broker.brokerType}_{f}.json")
             self.__setattr__(f"{f}_file", file)
             if file.exists():
                 self.__setattr__(
-                    f, Util.load_json(file, Order if f == "orders" else Sold)
+                    f, Util.load_json(file, Order if f in ['open_orders', 'order_history'] else Sold)
                 )
+
 
         # Meta info
         self.interval = 0
@@ -45,17 +49,17 @@ class Bot:
             self.periodic_update()
 
             # basically the sell block and update TP and SL logic
-            if len(self.orders) > 0:
+            if len(self.open_orders) > 0:
                 Config.NOTIFICATION_SERVICE.debug(
-                    f"[{self.broker.brokerType}]\tActive Order Tickers: [{self.orders}]"
+                    f"[{self.broker.brokerType}]\tActive Order Tickers: [{self.open_orders}]"
                 )
 
-                for key, stored_order in self.orders.items():
+                for key, stored_order in self.open_orders.items():
                     if key not in self.sold:
                         self.update(key, stored_order)
 
             # remove pending removals
-            [self.orders.pop(o) for o in self._pending_remove]
+            [self.open_orders.pop(o) for o in self._pending_remove]
             self._pending_remove = []
 
             # check if new tickers are listed
@@ -97,7 +101,7 @@ class Bot:
                 current_price > order.trailing_stop_loss_max
                 and self.config.ENABLE_TRAILING_STOP_LOSS
         ):
-            self.orders[key] = self.update_trailing_stop_loss(order, current_price)
+            self.open_orders[key] = self.update_trailing_stop_loss(order, current_price)
 
         # if price is increasing and is higher than the take profit maximum
         elif current_price > order.take_profit:
@@ -128,7 +132,7 @@ class Bot:
                 == 0
         ):
             Config.NOTIFICATION_SERVICE.info(
-                f"[{self.broker.brokerType}] ORDERS UPDATE:\n\t{self.orders}"
+                f"[{self.broker.brokerType}] ORDERS UPDATE:\n\t{self.open_orders}"
             )
             Config.NOTIFICATION_SERVICE.info(
                 f"[{self.broker.brokerType}]\tSaving.."
@@ -216,6 +220,7 @@ class Bot:
         Config.NOTIFICATION_SERVICE.message('CLOSE', pretty_close, (order,))
 
         # pending remove order from json file
+        self.order_history.append({order.ticker.ticker: order})
         self._pending_remove.append(order.ticker.ticker)
 
         # store sold trades data
@@ -252,7 +257,7 @@ class Bot:
         )
 
         if (
-                new_ticker.ticker not in self.orders
+                new_ticker.ticker not in self.open_orders
                 and self.config.QUOTE_TICKER in new_ticker.quote_ticker
         ):
             Config.NOTIFICATION_SERVICE.info(
@@ -289,7 +294,7 @@ class Bot:
                 Config.NOTIFICATION_SERVICE.get_service('VERBOSE_FILE').error(
                     "ORDER RESPONSE:\n{}".format(order.json())
                 )
-                self.orders[new_ticker.ticker] = order
+                self.open_orders[new_ticker.ticker] = order
                 if not Config.TEST and Config.SHARE_DATA:
                     Util.post_pipedream(order)
 
@@ -310,5 +315,6 @@ class Bot:
             )
 
     def save(self) -> NoReturn:
-        Util.dump_json(self.orders_file, self.orders)
-        Util.dump_json(self.sold_file, self.sold)
+        Util.dump_json(self.open_orders_file, obj=self.open_orders)
+        Util.dump_json(self.order_history_file, obj=self.order_history)
+        Util.dump_json(self.sold_file, obj=self.sold)

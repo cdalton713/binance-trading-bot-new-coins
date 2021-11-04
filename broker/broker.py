@@ -1,19 +1,21 @@
+import logging
 from abc import ABC, abstractmethod
-from typing import Dict, Any, NoReturn, List
+from datetime import datetime
+from typing import NoReturn, List
+from typing import Union
 
 import binance.exceptions
-from ftx.api import FtxClient
-from binance.client import Client as BinanceClient
-from datetime import datetime
-from typing import Union
-from util.models import BrokerType, Ticker, Order
-from util.exceptions import *
-from util import Config, Util
-from dateutil.parser import parse
-from util.decorators import retry
-import yaml
+import math
 import requests
-import logging
+import yaml
+from binance.client import Client as BinanceClient
+from dateutil.parser import parse
+from ftx.api import FtxClient
+
+from util import Config, Util
+from util.decorators import retry
+from util.exceptions import *
+from util.models import BrokerType, Ticker, Order
 
 logger = logging.getLogger(__name__)
 
@@ -35,11 +37,19 @@ class Broker(ABC):
                 )
             if broker == "BINANCE":
                 # TODO - SUBACCOUNTS FOR BINANCE IS NOT IMPLEMENTED YET
-                return Binance(
-                    subaccount="",
-                    key=auth["BINANCE"]["key"],
-                    secret=auth["BINANCE"]["secret"],
-                )
+                if Config.BINANCE_TESTNET:
+                    return Binance(
+                        subaccount="",
+                        key=auth["BINANCE"]["testnetkey"],
+                        secret=auth["BINANCE"]["testnetsecret"],
+                        testnet=True
+                    )
+                else:
+                    return Binance(
+                        subaccount="",
+                        key=auth["BINANCE"]["key"],
+                        secret=auth["BINANCE"]["secret"],
+                    )
 
     @abstractmethod
     def get_tickers(self, quote_ticker: str, **kwargs) -> List[Ticker]:
@@ -211,10 +221,10 @@ class FTX(FtxClient, Broker):
 
 
 class Binance(BinanceClient, Broker):
-    def __init__(self, subaccount: str, key: str, secret: str) -> NoReturn:
+    def __init__(self, subaccount: str, key: str, secret: str, testnet: bool = False) -> NoReturn:
         self.brokerType = "BINANCE"
 
-        super().__init__(api_key=key, api_secret=secret)
+        super().__init__(api_key=key, api_secret=secret, testnet=testnet)
 
     @retry(
         (
@@ -249,12 +259,36 @@ class Binance(BinanceClient, Broker):
     def place_order(self, config: Config, *args, **kwargs) -> Order:
         kwargs["symbol"] = kwargs["ticker"].ticker
         kwargs["type"] = "market"
-        kwargs["quoteOrderQty"] = float(config.QUANTITY)
         kwargs['side'] = kwargs['side'].upper()
 
         params = {}
-        for p in ["quoteOrderQty", "side", "symbol", "type"]:
-            params[p] = kwargs[p]
+        if kwargs['side'] == 'BUY':
+            kwargs["quoteOrderQty"] = float(config.QUANTITY)
+            for p in ["quoteOrderQty", "side", "symbol", "type"]:
+                params[p] = kwargs[p]
+        else:
+            kwargs['quantity'] = kwargs['size']
+
+            # Check lot size requirements
+            symbol_info = self.get_symbol_info(kwargs['symbol'])
+            lot_size = symbol_info['filters'][2]
+
+            if kwargs['quantity'] <= float(lot_size['minQty']):
+                raise TradingBotException(
+                    """The remaining quantity available to sell is too low.  Binance requires ~$10.30 USDT worth of 
+                    coin per trade.  If the coin decreased in value below this it cannot be sold through this app.  
+                    Sell as dust on Binance.com.""")
+            if kwargs['quantity'] >= float(lot_size['maxQty']):
+                raise TradingBotException("""The remaining quantity is too high.  This is probably in error, 
+                send logs to GitHub repo.""")
+
+            step_size = float(lot_size['stepSize'])
+            precision = int(round(-math.log(step_size, 10), 0))
+
+            kwargs['quantity'] = round(kwargs['quantity'] * 0.9995, precision)
+
+            for p in ["quantity", "side", "symbol", "type"]:
+                params[p] = kwargs[p]
 
         if Config.TEST:
             # does not return anything.  No error mean request was good.
@@ -284,7 +318,7 @@ class Binance(BinanceClient, Broker):
             fill_count = 0
 
             for fill in api_resp['fills']:
-                fill_sum += (float(fill['price']) - float(fill['commission']))
+                fill_sum += (float(fill['price']) - float(fill['commission'])) * float(fill['qty'])
                 fill_count += float(fill['qty'])
 
             avg_fill_price = fill_sum / fill_count
@@ -297,16 +331,16 @@ class Binance(BinanceClient, Broker):
                 side=api_resp["side"],
                 size=api_resp["executedQty"],
                 type="market",
-                status="TEST_MODE" if Config.TEST else "LIVE",
+                status="TESTNET" if Config.BINANCE_TESTNET else "TEST_MODE" if Config.TEST else "LIVE",
                 take_profit=Util.percent_change(
-                    float(api_resp["price"]), config.TAKE_PROFIT_PERCENT
+                    float(avg_fill_price), config.TAKE_PROFIT_PERCENT
                 ),
                 stop_loss=Util.percent_change(
-                    float(api_resp["price"]), - config.STOP_LOSS_PERCENT
+                    float(avg_fill_price), - config.STOP_LOSS_PERCENT
                 ),
                 trailing_stop_loss_max=float("-inf"),
                 trailing_stop_loss=Util.percent_change(
-                    float(api_resp["price"]), - config.TRAILING_STOP_LOSS_PERCENT
+                    float(avg_fill_price), - config.TRAILING_STOP_LOSS_PERCENT
                 ),
             )
 

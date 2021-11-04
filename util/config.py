@@ -32,7 +32,7 @@ class Config:
     total_time = 0
     total_iter = 0
     PIPEDREAM_URL = "https://e853670d8092ce2689bf7fe37c7b4830.m.pipedream.net"
-    VERSION_URL = "https://raw.githubusercontent.com/cdalton713/trading-bot-new-coins/dev/version.json"
+    VERSION_URL = "https://raw.githubusercontent.com/cdalton713/trading-bot-new-coins/main/version.json"
 
     SHARE_DATA = True
 
@@ -46,6 +46,8 @@ class Config:
     FRONTLOAD_DURATION = 7
 
     TEST = True
+    BINANCE_TESTNET = False
+
     ENABLED_BROKERS = []
 
     PROGRAM_OPTIONS = {"LOG_LEVEL": "INFO", "LOG_INFO_UPDATE_INTERVAL": 2}
