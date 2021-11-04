@@ -64,25 +64,40 @@ class Util:
         dictConfig(logging_config)
 
     @staticmethod
-    def load_json(file: Path, model: Type[Union[Order, Sold]]) -> Dict[str, BaseModel]:
+    def load_json(file: Path, model: Type[Union[Order, Sold]]) -> Union[List[Dict[str, BaseModel]], Dict[str, BaseModel]]:
         try:
             with open(file.absolute(), "r+") as f:
-                dict_ = json.load(f)
+                res = json.load(f)
         except JSONDecodeError:
-            return {}
+            return [] if 'order_history' in str(file) else {}
         else:
-            for key, value in dict_.items():
-                dict_[key] = model.parse_obj(value)
-            return dict_
+            if type(res) is dict:
+                for key, value in res.items():
+                    res[key] = model.parse_obj(value)
+                return res
+            else:
+                lst = []
+                for item in res:
+                    for key, value in item.items():
+                        lst.append({key: model.parse_obj(value)})
+                return lst
 
     @staticmethod
-    def dump_json(file: Path, obj: Dict[str, BaseModel]) -> NoReturn:
-        dict_ = {}
-        for key, value in obj.items():
-            dict_[key] = value.dict()
+    def dump_json(file: Path, obj: Union[List[Dict[str, BaseModel]], Dict[str, BaseModel]]) -> NoReturn:
 
-        with open(file.absolute(), "w") as f:
-            json.dump(dict_, f, indent=4, default=json_serial)
+        if obj is not None:
+            if type(obj) is list:
+                res = []
+                for item in obj:
+                    for key, value in item.items():
+                        res.append({key: value.dict()})
+            else:
+                res = {}
+                for key, value in obj.items():
+                    res[key] = value.dict()
+
+            with open(file.absolute(), "w") as f:
+                json.dump(res, f, indent=4, default=json_serial)
 
     @staticmethod
     def percent_change(value: float, percent: float) -> float:

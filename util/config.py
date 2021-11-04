@@ -44,6 +44,8 @@ class Config:
     FRONTLOAD_DURATION = 7
 
     TEST = True
+    BINANCE_TESTNET = False
+
     ENABLED_BROKERS = []
 
     PROGRAM_OPTIONS = {"LOG_LEVEL": "INFO", "LOG_INFO_UPDATE_INTERVAL": 2}

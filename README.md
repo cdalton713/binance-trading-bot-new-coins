@@ -45,7 +45,7 @@ This is a bit more involved than Discord...
 6. Go to the chat you wish the bot to be in and add the bot.  Add Member, then \<your bot name\>
 7. Type a message in that chat
 8. Visit this url:  `https://api.telegram.org/bot<YourBOTToken>/getUpdates` where `<YourBOTTOKEN>` is your token from step 5.
-9. You should see a JSON response which has the chat id displayed.  The negative number (keep the negative sign)
+9. You should see a JSON response which has the chat id displayed.  If the number is negative, keep the minus sign.
 10. Copy the token to  `NOTIFICATION_OPTIONS -> TELEGRAM -> AUTH -> ENDPOINT`
 11. Copy the chat id to `NOTIFICATION_OPTIONS -> TELEGRAM -> AUTH -> CHAT_ID`
 
@@ -64,6 +64,10 @@ I would love contributors! Please send a pull request, and I will review it.
 Please include any applicable stack traces and logs.  There are currently two log files: `errors.log` and `verbose_log.log`.  Please also attach any relevant information from these files.
 
 ## Changelog:
+- 2021-11-04:
+  1. Setup Binance TestNet for much better testing.  Functionality seems to be working for each step now based on Binance API responses.
+  2. ReadMe and Config Info updated
+  
 - 2021-10-11:
   1. Binance order price response fix
 

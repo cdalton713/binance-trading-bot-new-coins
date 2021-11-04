@@ -4,6 +4,9 @@ TRADE_OPTIONS:
   FREQUENCY_SECONDS: 5
   TEST: True
 
+  # Development debugging.  Leave False.
+  BINANCE_TESTNET: False
+
   #  In theory, Binance/FTX will add a new coin at the start of a minute.
   # Enabling this option will have the program continuously query the APIs for 'FRONTLOAD_DURATION' seconds starting at
   # the 57th second of each minute.  A 'FRONTLOAD_DURATION' of 8 would query the API from 00:57 until 01:05.
@@ -79,4 +82,4 @@ NOTIFICATION_OPTIONS:
       SEND_CLOSE: True
     AUTH:
       ENDPOINT: 'TOKEN -> Read readme for more info'
-      CHAT_ID: '-XXXXXX -> Read readme for more info'
+      CHAT_ID: 'XXXXXX -> Read readme for more info.  If this value is negative, keep the minus sign.'
