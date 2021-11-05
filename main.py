@@ -33,7 +33,7 @@ async def forever(routines: List):
         current_second = datetime.now().second
 
         if Config.FRONTLOAD_ENABLED:
-            while current_second >= 57 or current_second <= Config.FRONTLOAD_DURATION - 2:
+            while current_second >= 57 or current_second <= Config.FRONTLOAD_DURATION - 3:
                 # FRONTLOAD PERIOD
                 t = time.time()
                 await main(routines)
@@ -62,7 +62,7 @@ async def forever(routines: List):
         Config.total_time += time_taken
         Config.total_iter += 1
 
-        await asyncio.sleep(Config.FREQUENCY_SECONDS)
+        await asyncio.sleep(sleep_time)
 
 
 async def main(bots_: List):
