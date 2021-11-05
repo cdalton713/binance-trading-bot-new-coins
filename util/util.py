@@ -1,30 +1,38 @@
-from pathlib import Path
-from logging.config import dictConfig
-from typing import Dict, Optional, Any, List, NoReturn, Union, Type
 import json
 import pickle
-from util.config import Config
-import requests
-from requests import Response
-from pydantic import BaseModel
 from datetime import date, datetime
-from util.models import Sold, Order
 from json.decoder import JSONDecodeError
+from logging.config import dictConfig
+from pathlib import Path
+from typing import Dict, Optional, Any, List, NoReturn, Union, Type
+
+import requests
+from pydantic import BaseModel
+from requests import Response
+
+from util.config import Config
+from util.models import Sold, Order
+
 
 class Util:
     FORMAT = "[%(levelname)s] %(asctime)s: %(message)s."
+    VERBOSE_FORMAT = "%(asctime)s: %(message)s."
     DATE_FORMAT = None
 
     @staticmethod
-    def setup_logging(name, level="INFO", fmt=FORMAT):
+    def setup_logging(name, level="INFO", fmt=FORMAT, verbose_fmt=VERBOSE_FORMAT):
         formatted = fmt.format(app=name)
+        verbose_formatted = verbose_fmt.format(app=name)
         log_dir = Path(__file__).parent.parent.joinpath("logs")
         log_dir.mkdir(exist_ok=True)
 
         logging_config = {
             "version": 1,
             "disable_existing_loggers": False,
-            "formatters": {"standard": {"format": formatted}},
+            "formatters": {
+                "standard": {"format": formatted},
+                "verbose": {"format": verbose_formatted},
+            },
             "handlers": {
                 "default": {
                     "class": "logging.StreamHandler",
@@ -48,12 +56,12 @@ class Util:
                     "backupCount": 5,
                     "level": level,
                     "filename": "{}/verbose_log.log".format(log_dir),
-                    "formatter": "standard",
+                    "formatter": "verbose",
                 },
             },
             "loggers": {
                 "": {"handlers": ["default"], "level": level},
-                "error_log": {"handlers": ["default", "error_file"], "level": 'ERROR'},
+                "error_log": {"handlers": ["default", "error_file"], "level": "ERROR"},
                 "verbose_log": {
                     "handlers": ["default", "verbose_file"],
                     "level": "DEBUG",
@@ -64,12 +72,14 @@ class Util:
         dictConfig(logging_config)
 
     @staticmethod
-    def load_json(file: Path, model: Type[Union[Order, Sold]]) -> Union[List[Dict[str, BaseModel]], Dict[str, BaseModel]]:
+    def load_json(
+        file: Path, model: Type[Union[Order, Sold]]
+    ) -> Union[List[Dict[str, BaseModel]], Dict[str, BaseModel]]:
         try:
             with open(file.absolute(), "r+") as f:
                 res = json.load(f)
         except JSONDecodeError:
-            return [] if 'order_history' in str(file) else {}
+            return [] if "order_history" in str(file) else {}
         else:
             if type(res) is dict:
                 for key, value in res.items():
@@ -83,7 +93,9 @@ class Util:
                 return lst
 
     @staticmethod
-    def dump_json(file: Path, obj: Union[List[Dict[str, BaseModel]], Dict[str, BaseModel]]) -> NoReturn:
+    def dump_json(
+        file: Path, obj: Union[List[Dict[str, BaseModel]], Dict[str, BaseModel]]
+    ) -> NoReturn:
 
         if obj is not None:
             if type(obj) is list:
@@ -109,7 +121,9 @@ class Util:
             return pickle.load(f)
 
     @staticmethod
-    def dump_pickle(obj: Any, obj_desc: str, directory: Optional[Path] = None) -> NoReturn:
+    def dump_pickle(
+        obj: Any, obj_desc: str, directory: Optional[Path] = None
+    ) -> NoReturn:
         if directory is None:
             file = Config.TEST_DIR.joinpath(
                 f'{obj_desc}{datetime.now().strftime("%Y%m%d%H%M%S")}'

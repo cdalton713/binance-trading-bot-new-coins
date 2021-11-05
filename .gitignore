@@ -10,9 +10,12 @@ sold.json
 
 BINANCE_orders.json
 BINANCE_sold.json
+BINANCE_order_history.json
+
 
 FTX_orders.json
 FTX_sold.json
+FTX_order_history.json
 
 # Created by https://www.toptal.com/developers/gitignore/api/pycharm,python
 # Edit at https://www.toptal.com/developers/gitignore?templates=pycharm,python
@@ -269,4 +272,5 @@ config.yml
 .idea/trading-bot-new-coins.iml
 
 logs/
+
 
