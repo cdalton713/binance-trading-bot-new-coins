@@ -1,8 +1,8 @@
 import logging
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import NoReturn, List
-from typing import Union
+from typing import NoReturn, List, Tuple
+from typing import Union, Dict
 
 import binance.exceptions
 import math
@@ -52,7 +52,7 @@ class Broker(ABC):
                     )
 
     @abstractmethod
-    def get_tickers(self, quote_ticker: str, **kwargs) -> List[Ticker]:
+    def get_tickers(self, quote_ticker: str, **kwargs) -> Tuple[List[Ticker], Dict]:
         """
         Returns all coins from Broker
         """
@@ -73,6 +73,9 @@ class Broker(ABC):
     def convert_size(self, config: Config, ticker: Ticker, price: float) -> float:
         raise NotImplementedError
 
+    @abstractmethod
+    def get_rate_limit(self) -> int:
+        raise NotImplementedError
 
 class FTX(FtxClient, Broker):
     def __init__(self, subaccount: str, key: str, secret: str) -> NoReturn:
@@ -98,7 +101,7 @@ class FTX(FtxClient, Broker):
         0,
         logger,
     )
-    def get_tickers(self, quote_ticker: str, **kwargs) -> List[Ticker]:
+    def get_tickers(self, quote_ticker: str, **kwargs) -> Tuple[List[Ticker], Dict]:
         try:
             api_resp = super(FTX, self).get_markets()
 
@@ -121,7 +124,7 @@ class FTX(FtxClient, Broker):
                                 quote_ticker=ticker["quoteCurrency"],
                             )
                         )
-            return resp
+            return resp, {}
         except Exception as e:
             if len(e.args) > 0 and "FTX is currently down" in e.args[0]:
                 raise BrokerDownException(e.args[0])
@@ -222,6 +225,9 @@ class FTX(FtxClient, Broker):
     def convert_size(self, config: Config, ticker: Ticker, price: float) -> float:
         size = config.QUANTITY / price
         return size
+
+    def get_rate_limit(self) -> int:
+        return 1000
 
 
 class Binance(BinanceClient, Broker):
@@ -379,7 +385,7 @@ class Binance(BinanceClient, Broker):
         0,
         logger,
     )
-    def get_tickers(self, quote_ticker: str, **kwargs) -> List[Ticker]:
+    def get_tickers(self, quote_ticker: str, **kwargs) -> Tuple[List[Ticker], Dict]:
         api_resp = super(Binance, self).get_exchange_info()
 
         test_retry = kwargs.get("test_retry", False)
@@ -397,7 +403,11 @@ class Binance(BinanceClient, Broker):
                     )
                 )
 
-        return resp
+        return resp, self.response.headers
+
+    def get_rate_limit(self) -> int:
+        api_resp = super(Binance, self).get_exchange_info()
+        return api_resp['rateLimits'][0]['limit']
 
     def convert_size(self, config: Config, ticker: Ticker, price: float) -> float:
 

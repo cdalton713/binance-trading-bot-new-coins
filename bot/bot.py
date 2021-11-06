@@ -1,7 +1,9 @@
 import traceback
 from datetime import datetime
 from typing import List, Dict, NoReturn, Tuple
+
 import math
+
 from broker import Broker
 from notification.notification import pretty_entry, pretty_close
 from util import Config
@@ -154,7 +156,9 @@ class Bot:
             self.save()
             self.upgrade_update()
             self.periodic_update_sent = True
-        elif self.periodic_update_sent:
+        elif minutes_past > 0 and minutes_past % Config.PROGRAM_OPTIONS[
+            "LOG_INFO_UPDATE_INTERVAL"
+        ] > 0 and self.periodic_update_sent:
             self.periodic_update_sent = False
 
     def get_starting_tickers(self) -> Tuple[List[Ticker], Dict[str, bool]]:
@@ -164,7 +168,9 @@ class Bot:
         All the new tickers detected during the loop will have a value of False.
         """
 
-        tickers = self.broker.get_tickers(self.config.QUOTE_TICKER)
+        tickers, headers = self.broker.get_tickers(self.config.QUOTE_TICKER)
+
+        self.config.RATE_LIMIT = self.broker.get_rate_limit()
         ticker_seen_dict: Dict[str, bool] = {}
 
         for ticker in tickers:
@@ -181,7 +187,9 @@ class Bot:
         Config.NOTIFICATION_SERVICE.debug(
             f"[{self.broker.brokerType}]\tGetting all tickers.."
         )
-        all_tickers_recheck = self.broker.get_tickers(self.config.QUOTE_TICKER)
+        all_tickers_recheck, headers = self.broker.get_tickers(self.config.QUOTE_TICKER)
+
+        Config.auto_rate_current_weight = int(headers['x-mbx-used-weight-1m'])
 
         if (
             all_tickers_recheck is not None
