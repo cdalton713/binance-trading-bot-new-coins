@@ -1,6 +1,7 @@
 import traceback
+from datetime import datetime
 from typing import List, Dict, NoReturn, Tuple
-
+import math
 from broker import Broker
 from notification.notification import pretty_entry, pretty_close
 from util import Config
@@ -40,7 +41,8 @@ class Bot:
                 )
 
         # Meta info
-        self.interval = 0
+        self.time = datetime.now()
+        self.periodic_update_sent = False
 
     async def run_async(self) -> NoReturn:
         """
@@ -78,8 +80,6 @@ class Bot:
                 Config.NOTIFICATION_SERVICE.debug(
                     f"[{self.broker.brokerType}]\tNo new tickers found.."
                 )
-
-            self.interval += 1
 
         except Exception as e:
             self.save()
@@ -143,21 +143,19 @@ class Bot:
         log an update about every LOG_INFO_UPDATE_INTERVAL minutes
         also re-saves files
         """
-        if (
-            self.interval > 0
-            and self.interval
-            % (
-                (Config.PROGRAM_OPTIONS["LOG_INFO_UPDATE_INTERVAL"] * 60)
-                / Config.FREQUENCY_SECONDS
-            )
-            == 0
-        ):
+        minutes_past = math.floor(((datetime.now() - self.time).total_seconds() / 60))
+        if minutes_past > 0 and minutes_past % Config.PROGRAM_OPTIONS[
+            "LOG_INFO_UPDATE_INTERVAL"
+        ] == 0 and not self.periodic_update_sent:
             Config.NOTIFICATION_SERVICE.info(
                 f"[{self.broker.brokerType}] ORDERS UPDATE:\n\t{self.open_orders}"
             )
             Config.NOTIFICATION_SERVICE.info(f"[{self.broker.brokerType}]\tSaving..")
             self.save()
             self.upgrade_update()
+            self.periodic_update_sent = True
+        elif self.periodic_update_sent:
+            self.periodic_update_sent = False
 
     def get_starting_tickers(self) -> Tuple[List[Ticker], Dict[str, bool]]:
         """

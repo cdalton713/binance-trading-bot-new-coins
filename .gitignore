@@ -274,3 +274,5 @@ config.yml
 logs/
 
 
+
+aws/
