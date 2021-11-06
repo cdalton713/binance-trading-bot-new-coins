@@ -88,6 +88,7 @@ class Config:
     def __init__(self, broker: BrokerType, file: str = None) -> NoReturn:
         # Default config values
         self.ENABLED = False
+        self.USE_BNB_FOR_FEES = False
         self.SUBACCOUNT = None
         self.QUANTITY = 30
         self.QUOTE_TICKER = "USDT"
