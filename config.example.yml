@@ -18,6 +18,11 @@ TRADE_OPTIONS:
   BROKERS:
     BINANCE:
       ENABLED: True
+      # This must be MANUALLY turned on through the Binance web interface.  I recommend turning ON.
+      # if True: Sells will sell 100% of your coin.  You MUST have enough BNB in your SPOT account to cover the fees.
+      # if False: Sells will sell ~99.9% of your coin.  The last .10% will go towards fees.  Some coins can only be
+      # sold in whole numbers, so if this setting is False you will likely have 1 entire coin leftover after the sell transaction.
+      USE_BNB_FOR_FEES: False
       # quantify of QUOTE_TICKER (below) to be bought
       QUANTITY: 30
       # For example, BTCUSDT will be bought with pairing 'USDT'

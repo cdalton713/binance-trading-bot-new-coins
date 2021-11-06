@@ -24,7 +24,7 @@ class TestBot(TestCase):
         # Config.load_global_config()
 
         Config.TEST = True
-        Config.BINANCE_TESTNET = True
+        Config.BINANCE_TESTNET = False
         self.FTX = Bot("FTX")
         self.Binance = Bot("BINANCE")
         self.maxDiff = None

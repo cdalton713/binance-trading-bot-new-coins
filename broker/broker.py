@@ -294,7 +294,7 @@ class Binance(BinanceClient, Broker):
             step_size = float(lot_size["stepSize"])
             precision = int(round(-math.log(step_size, 10), 0))
 
-            kwargs["quantity"] = round(kwargs["quantity"] * 0.9995, precision)
+            kwargs["quantity"] = round(kwargs["quantity"] * (1 if config.USE_BNB_FOR_FEES else 0.9995), precision)
 
             for p in ["quantity", "side", "symbol", "type"]:
                 params[p] = kwargs[p]
