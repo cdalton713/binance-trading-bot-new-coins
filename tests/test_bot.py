@@ -24,7 +24,7 @@ class TestBot(TestCase):
         # Config.load_global_config()
 
         Config.TEST = True
-        Config.BINANCE_TESTNET = False
+        Config.BINANCE_TESTNET = True
         self.FTX = Bot("FTX")
         self.Binance = Bot("BINANCE")
         self.maxDiff = None
@@ -38,6 +38,7 @@ class TestBot(TestCase):
         self.Binance.config.TAKE_PROFIT_PERCENT = 30
         self.Binance.config.TRAILING_STOP_LOSS_ACTIVATION = 35
         self.Binance.config.TRAILING_STOP_LOSS_PERCENT = 15
+        self.Binance.config.USE_BNB_FOR_FEES = True
 
         self.binance_test_order = parse_obj_as(
             Order,
