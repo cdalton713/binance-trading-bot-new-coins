@@ -42,7 +42,7 @@ class Broker(ABC):
                         subaccount="",
                         key=auth["BINANCE"]["testnetkey"],
                         secret=auth["BINANCE"]["testnetsecret"],
-                        testnet=True
+                        testnet=True,
                     )
                 else:
                     return Binance(
@@ -102,7 +102,7 @@ class FTX(FtxClient, Broker):
         try:
             api_resp = super(FTX, self).get_markets()
 
-            test_retry = kwargs.get('test_retry', False)
+            test_retry = kwargs.get("test_retry", False)
             if test_retry:
                 raise requests.exceptions.ConnectionError
 
@@ -129,9 +129,7 @@ class FTX(FtxClient, Broker):
                 raise
 
     @retry(
-        (
-                Exception,
-        ),
+        (Exception,),
         2,
         3,
         None,
@@ -184,7 +182,10 @@ class FTX(FtxClient, Broker):
                 status="TEST_MODE",
                 take_profit=Util.percent_change(price, config.TAKE_PROFIT_PERCENT),
                 stop_loss=Util.percent_change(price, -config.STOP_LOSS_PERCENT),
-                trailing_stop_loss_max=float("-inf"),
+                trailing_stop_loss_activated=False,
+                trailing_stop_loss_max=Util.percent_change(
+                    price, config.TRAILING_STOP_LOSS_ACTIVATION
+                ),
                 trailing_stop_loss=Util.percent_change(
                     price, -config.TRAILING_STOP_LOSS_PERCENT
                 ),
@@ -209,7 +210,10 @@ class FTX(FtxClient, Broker):
                 stop_loss=Util.percent_change(
                     api_resp["price"], -config.STOP_LOSS_PERCENT
                 ),
-                trailing_stop_loss_max=float("-inf"),
+                trailing_stop_loss_activated=False,
+                trailing_stop_loss_max=Util.percent_change(
+                    api_resp["price"], config.TRAILING_STOP_LOSS_ACTIVATION
+                ),
                 trailing_stop_loss=Util.percent_change(
                     api_resp["price"], -config.TRAILING_STOP_LOSS_PERCENT
                 ),
@@ -221,15 +225,17 @@ class FTX(FtxClient, Broker):
 
 
 class Binance(BinanceClient, Broker):
-    def __init__(self, subaccount: str, key: str, secret: str, testnet: bool = False) -> NoReturn:
+    def __init__(
+        self, subaccount: str, key: str, secret: str, testnet: bool = False
+    ) -> NoReturn:
         self.brokerType = "BINANCE"
 
         super().__init__(api_key=key, api_secret=secret, testnet=testnet)
 
     @retry(
         (
-                binance.exceptions.BinanceAPIException,
-                Exception,
+            binance.exceptions.BinanceAPIException,
+            Exception,
         ),
         2,
         3,
@@ -259,33 +265,36 @@ class Binance(BinanceClient, Broker):
     def place_order(self, config: Config, *args, **kwargs) -> Order:
         kwargs["symbol"] = kwargs["ticker"].ticker
         kwargs["type"] = "market"
-        kwargs['side'] = kwargs['side'].upper()
+        kwargs["side"] = kwargs["side"].upper()
 
         params = {}
-        if kwargs['side'] == 'BUY':
+        if kwargs["side"] == "BUY":
             kwargs["quoteOrderQty"] = float(config.QUANTITY)
             for p in ["quoteOrderQty", "side", "symbol", "type"]:
                 params[p] = kwargs[p]
         else:
-            kwargs['quantity'] = kwargs['size']
+            kwargs["quantity"] = kwargs["size"]
 
             # Check lot size requirements
-            symbol_info = self.get_symbol_info(kwargs['symbol'])
-            lot_size = symbol_info['filters'][2]
+            symbol_info = self.get_symbol_info(kwargs["symbol"])
+            lot_size = symbol_info["filters"][2]
 
-            if kwargs['quantity'] <= float(lot_size['minQty']):
+            if kwargs["quantity"] <= float(lot_size["minQty"]):
                 raise TradingBotException(
                     """The remaining quantity available to sell is too low.  Binance requires ~$10.30 USDT worth of 
                     coin per trade.  If the coin decreased in value below this it cannot be sold through this app.  
-                    Sell as dust on Binance.com.""")
-            if kwargs['quantity'] >= float(lot_size['maxQty']):
-                raise TradingBotException("""The remaining quantity is too high.  This is probably in error, 
-                send logs to GitHub repo.""")
+                    Sell as dust on Binance.com."""
+                )
+            if kwargs["quantity"] >= float(lot_size["maxQty"]):
+                raise TradingBotException(
+                    """The remaining quantity is too high.  This is probably in error, 
+                send logs to GitHub repo."""
+                )
 
-            step_size = float(lot_size['stepSize'])
+            step_size = float(lot_size["stepSize"])
             precision = int(round(-math.log(step_size, 10), 0))
 
-            kwargs['quantity'] = round(kwargs['quantity'] * 0.9995, precision)
+            kwargs["quantity"] = round(kwargs["quantity"] * 0.9995, precision)
 
             for p in ["quantity", "side", "symbol", "type"]:
                 params[p] = kwargs[p]
@@ -305,23 +314,28 @@ class Binance(BinanceClient, Broker):
                 type="market",
                 status="TEST_MODE",
                 take_profit=Util.percent_change(price, config.TAKE_PROFIT_PERCENT),
-                stop_loss=Util.percent_change(price, - config.STOP_LOSS_PERCENT),
-                trailing_stop_loss_max=float("-inf"),
+                stop_loss=Util.percent_change(price, -config.STOP_LOSS_PERCENT),
+                trailing_stop_loss_activated=False,
+                trailing_stop_loss_max=Util.percent_change(
+                    price, config.TRAILING_STOP_LOSS_ACTIVATION
+                ),
                 trailing_stop_loss=Util.percent_change(
                     price, -config.TRAILING_STOP_LOSS_PERCENT
                 ),
             )
         else:
             api_resp = super(Binance, self).create_order(**params)
-            Config.NOTIFICATION_SERVICE.get_service('VERBOSE_FILE').error(api_resp)
+            Config.NOTIFICATION_SERVICE.get_service("VERBOSE_FILE").error(api_resp)
             fill_sum = 0
             fill_count = 0
 
-            for fill in api_resp['fills']:
-                fill_sum += (float(fill['price']) - float(fill['commission'])) * float(fill['qty'])
-                fill_count += float(fill['qty'])
+            for fill in api_resp["fills"]:
+                fill_sum += (float(fill["price"]) - float(fill["commission"])) * float(
+                    fill["qty"]
+                )
+                fill_count += float(fill["qty"])
 
-            avg_fill_price = fill_sum / fill_count
+            avg_fill_price = float(fill_sum / fill_count)
 
             return Order(
                 broker="BINANCE",
@@ -331,16 +345,23 @@ class Binance(BinanceClient, Broker):
                 side=api_resp["side"],
                 size=api_resp["executedQty"],
                 type="market",
-                status="TESTNET" if Config.BINANCE_TESTNET else "TEST_MODE" if Config.TEST else "LIVE",
+                status="TESTNET"
+                if Config.BINANCE_TESTNET
+                else "TEST_MODE"
+                if Config.TEST
+                else "LIVE",
                 take_profit=Util.percent_change(
-                    float(avg_fill_price), config.TAKE_PROFIT_PERCENT
+                    avg_fill_price, config.TAKE_PROFIT_PERCENT
                 ),
                 stop_loss=Util.percent_change(
-                    float(avg_fill_price), - config.STOP_LOSS_PERCENT
+                    avg_fill_price, -config.STOP_LOSS_PERCENT
                 ),
-                trailing_stop_loss_max=float("-inf"),
+                trailing_stop_loss_activated=False,
+                trailing_stop_loss_max=Util.percent_change(
+                    avg_fill_price, config.TRAILING_STOP_LOSS_ACTIVATION
+                ),
                 trailing_stop_loss=Util.percent_change(
-                    float(avg_fill_price), - config.TRAILING_STOP_LOSS_PERCENT
+                    avg_fill_price, -config.TRAILING_STOP_LOSS_PERCENT
                 ),
             )
 
@@ -361,7 +382,7 @@ class Binance(BinanceClient, Broker):
     def get_tickers(self, quote_ticker: str, **kwargs) -> List[Ticker]:
         api_resp = super(Binance, self).get_exchange_info()
 
-        test_retry = kwargs.get('test_retry', False)
+        test_retry = kwargs.get("test_retry", False)
         if test_retry:
             raise requests.exceptions.ConnectionError
 

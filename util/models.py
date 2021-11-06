@@ -27,6 +27,7 @@ class Order(BaseModel):
     take_profit: float
     stop_loss: float
 
+    trailing_stop_loss_activated: bool
     trailing_stop_loss_max: float
     trailing_stop_loss: float
 
@@ -34,4 +35,5 @@ class Order(BaseModel):
 class Sold(Order):
     profit: float
     profit_percent: float
+    reason: str
     sold_datetime: datetime

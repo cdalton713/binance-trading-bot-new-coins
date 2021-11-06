@@ -11,6 +11,8 @@ Config.load_global_config()
 # setup logging
 Util.setup_logging(name="new-coin-bot", level=Config.PROGRAM_OPTIONS["LOG_LEVEL"])
 
+total_time = 0
+total_iter = 0
 
 def setup() -> List[Bot]:
     Config.NOTIFICATION_SERVICE.info("Creating bots..")
@@ -31,7 +33,7 @@ async def forever(routines: List):
         current_second = datetime.now().second
 
         if Config.FRONTLOAD_ENABLED:
-            while current_second >= 57 or current_second <= Config.FRONTLOAD_DURATION - 2:
+            while current_second >= 57 or current_second <= Config.FRONTLOAD_DURATION - 3:
                 # FRONTLOAD PERIOD
                 t = time.time()
                 await main(routines)
@@ -43,8 +45,9 @@ async def forever(routines: List):
         # STANDARD PERIOD
         t = time.time()
         await main(routines)
+        time_taken = time.time() - t
         Config.NOTIFICATION_SERVICE.debug(
-            "Loop finished in [{}] seconds".format(time.time() - t)
+            "Loop finished in [{}] seconds".format(time_taken)
         )
 
         if current_second + Config.FREQUENCY_SECONDS > 57:
@@ -55,7 +58,11 @@ async def forever(routines: List):
         Config.NOTIFICATION_SERVICE.debug(
             "Sleeping for [{}] seconds".format(sleep_time)
         )
-        await asyncio.sleep(Config.FREQUENCY_SECONDS)
+
+        Config.total_time += time_taken
+        Config.total_iter += 1
+
+        await asyncio.sleep(sleep_time)
 
 
 async def main(bots_: List):
@@ -80,3 +87,5 @@ if __name__ == "__main__":
     finally:
         for bot in bots:
             bot.save()
+        print("AVG TIME PER LOOP: {}".format(Config.total_time / Config.total_iter))
+        print("TOTAL LOOPS: {}".format(Config.total_iter))

@@ -51,7 +51,9 @@ def __retry_internal(
                 raise
 
             if isinstance(e, urllib3.exceptions.MaxRetryError):
-                msg = "Max Retries Connection Error...retrying x{}".format(tries - _tries)
+                msg = "Max Retries Connection Error...retrying x{}".format(
+                    tries - _tries
+                )
 
             elif isinstance(e, requests.exceptions.HTTPError):
                 msg = "Connection Forcibly Closed...retrying x{}".format(tries - _tries)
@@ -59,7 +61,9 @@ def __retry_internal(
             elif isinstance(e, requests.exceptions.ConnectionError):
                 msg = "Bad Gateway...retrying x{}".format(tries - _tries)
             else:
-                msg = "{}, retrying {} in {} seconds...".format(e, tries - _tries, _delay)
+                msg = "{}, retrying {} in {} seconds...".format(
+                    e, tries - _tries, _delay
+                )
 
             logger.warning(msg)
 

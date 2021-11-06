@@ -29,7 +29,6 @@ TRADE_OPTIONS:
       # Auto-sell if price goes above Y% of original purchase price
       # TAKE_PROFIT_PERCENT is **IGNORED** if ENABLE_TRAILING_STOP_LOSS is True
       TAKE_PROFIT_PERCENT: 30
-      # TAKE_PROFIT_PERCENT is **IGNORED** if ENABLE_TRAILING_STOP_LOSS is True
       ENABLE_TRAILING_STOP_LOSS: True
       #  Activate trailing stop loss once price is Z% above original purchase price
       TRAILING_STOP_LOSS_ACTIVATION: 35

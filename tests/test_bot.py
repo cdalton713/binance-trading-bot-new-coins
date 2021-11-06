@@ -5,12 +5,13 @@ from typing import Dict
 from unittest import TestCase
 from datetime import datetime
 from binance.exceptions import BinanceAPIException
+from pydantic import parse_obj_as
 
 import util.models
 from bot import Bot
 from util import Config
 from util import Util
-from util.models import Ticker
+from util.models import Ticker, Order
 
 # setup logging
 Util.setup_logging(name="new-coin-bot", level="DEBUG")
@@ -28,15 +29,38 @@ class TestBot(TestCase):
         self.Binance = Bot("BINANCE")
         self.maxDiff = None
 
-        self.FTX.config.STOP_LOSS_PERCENT = 3
-        self.FTX.config.TAKE_PROFIT_PERCENT = 3
-        self.FTX.config.TRAILING_STOP_LOSS_PERCENT = 2
-        self.FTX.config.TRAILING_STOP_LOSS_PERCENT = 2
+        self.FTX.config.STOP_LOSS_PERCENT = 20
+        self.FTX.config.TAKE_PROFIT_PERCENT = 30
+        self.FTX.config.TRAILING_STOP_LOSS_ACTIVATION = 35
+        self.FTX.config.TRAILING_STOP_LOSS_PERCENT = 15
 
-        self.Binance.config.STOP_LOSS_PERCENT = 3
-        self.Binance.config.TAKE_PROFIT_PERCENT = 3
-        self.Binance.config.TRAILING_STOP_LOSS_PERCENT = 2
-        self.Binance.config.TRAILING_STOP_LOSS_PERCENT = 2
+        self.Binance.config.STOP_LOSS_PERCENT = 20
+        self.Binance.config.TAKE_PROFIT_PERCENT = 30
+        self.Binance.config.TRAILING_STOP_LOSS_ACTIVATION = 35
+        self.Binance.config.TRAILING_STOP_LOSS_PERCENT = 15
+
+        self.binance_test_order = parse_obj_as(
+            Order,
+            {
+                "broker": "BINANCE",
+                "ticker": {
+                    "ticker": "BTCUSDT",
+                    "base_ticker": "BTC",
+                    "quote_ticker": "USDT",
+                },
+                "purchase_datetime": datetime.now(),
+                "price": 100,
+                "side": "BUY",
+                "size": 1,
+                "type": "market",
+                "status": "TESTNET",
+                "take_profit": 120,
+                "stop_loss": 80,
+                "trailing_stop_loss_activated": False,
+                "trailing_stop_loss_max": 200,
+                "trailing_stop_loss": 170,
+            },
+        )
 
     # GENERAL TEST
     def test_get_new_tickers(self):
@@ -58,7 +82,7 @@ class TestBot(TestCase):
         new_tickers = self.Binance.get_new_tickers()
 
         try:
-            new_tickers[0].ticker = 'INVALIDUSDT'
+            new_tickers[0].ticker = "INVALIDUSDT"
             for new_ticker in new_tickers:
                 self.Binance.process_new_ticker(new_ticker)
         except BinanceAPIException:
@@ -91,7 +115,7 @@ class TestBot(TestCase):
 
     def test_binance_purchase_btc_usdt(self):
         try:
-            os.remove(Config.ROOT_DIR.joinpath('BINANCE_open_orders.json'))
+            os.remove(Config.ROOT_DIR.joinpath("BINANCE_open_orders.json"))
         except FileNotFoundError:
             pass
 
@@ -105,44 +129,134 @@ class TestBot(TestCase):
         for new_ticker in new_tickers:
             self.Binance.process_new_ticker(new_ticker)
 
-        self.assertEqual(self.Binance.open_orders['BTCUSDT'].dict(), {"broker": "BINANCE",
-                                                                      "ticker": {"ticker": "BTCUSDT",
-                                                                                 "base_ticker": "BTC",
-                                                                                 "quote_ticker": "USDT"},
-                                                                      "purchase_datetime": mock.ANY,
-                                                                      "price": mock.ANY, "side": "BUY",
-                                                                      "size": mock.ANY,
-                                                                      "type": "market", "status": "TESTNET",
-                                                                      "take_profit": mock.ANY,
-                                                                      "stop_loss": mock.ANY,
-                                                                      "trailing_stop_loss_max": float('-inf'),
-                                                                      "trailing_stop_loss": mock.ANY}
-                         )
+        self.assertEqual(
+            self.Binance.open_orders["BTCUSDT"].dict(),
+            {
+                "broker": "BINANCE",
+                "ticker": {
+                    "ticker": "BTCUSDT",
+                    "base_ticker": "BTC",
+                    "quote_ticker": "USDT",
+                },
+                "purchase_datetime": mock.ANY,
+                "price": mock.ANY,
+                "side": "BUY",
+                "size": mock.ANY,
+                "type": "market",
+                "status": "TESTNET",
+                "take_profit": mock.ANY,
+                "stop_loss": mock.ANY,
+                "trailing_stop_loss_activated": False,
+                "trailing_stop_loss_max": mock.ANY,
+                "trailing_stop_loss": mock.ANY,
+            },
+        )
         self.assertTrue(
-            self.Binance.config.QUANTITY - self.Binance.open_orders['BTCUSDT'].price * self.Binance.open_orders[
-                'BTCUSDT'].size < 0.50)
+            self.Binance.config.QUANTITY
+            - self.Binance.open_orders["BTCUSDT"].price
+            * self.Binance.open_orders["BTCUSDT"].size
+            < 0.50
+        )
 
         self.Binance.save()
+
+    def test_binance_update_values(self):
+        self.Binance.open_orders["BTCUSDT"] = self.binance_test_order
+
+        for key, value in self.Binance.open_orders.items():
+            self.Binance.config.ENABLE_TRAILING_STOP_LOSS = False
+
+            self.assertEqual("PRICE_BELOW_SL", self.Binance._update(value, 60))
+            self.assertEqual("PRICE_ABOVE_TP", self.Binance._update(value, 130))
+            self.assertEqual(None, self.Binance._update(value, 97))
+
+            self.Binance.config.ENABLE_TRAILING_STOP_LOSS = True
+            self.assertEqual(None, self.Binance._update(value, 150))
+            self.assertEqual(
+                "UPDATE_TRAILING_STOP_LOSS", self.Binance._update(value, 250)
+            )
+            self.assertEqual(None, self.Binance._update(value, 160))
+            self.Binance.open_orders[key].trailing_stop_loss_activated = True
+            self.assertEqual("PRICE_BELOW_TSL", self.Binance._update(value, 160))
 
     def test_binance_update_below_sl(self):
         self.test_binance_purchase_btc_usdt()
 
         for key, value in self.Binance.open_orders.items():
-            self.Binance.update(key, value, current_price=self.Binance.open_orders['BTCUSDT'].price - 5000)
-            self.assertDictEqual(self.Binance.sold['BTCUSDT'].dict(), {'broker': 'BINANCE',
-                                                                       'ticker': {'ticker': 'BTCUSDT',
-                                                                                  'base_ticker': 'BTC',
-                                                                                  'quote_ticker': 'USDT'},
-                                                                       'purchase_datetime': mock.ANY,
-                                                                       'price': mock.ANY, 'side': 'SELL',
-                                                                       'size': mock.ANY, 'type': 'market',
-                                                                       'status': 'TESTNET', 'take_profit': mock.ANY,
-                                                                       'stop_loss': mock.ANY,
-                                                                       'trailing_stop_loss_max': float('-inf'),
-                                                                       'trailing_stop_loss': mock.ANY,
-                                                                       'profit': mock.ANY,
-                                                                       'profit_percent': mock.ANY,
-                                                                       'sold_datetime': mock.ANY})
+            self.Binance.update(
+                key,
+                value,
+                current_price=60,
+            )
+            self.assertEqual(
+                self.Binance.sold["BTCUSDT"].dict(),
+                {
+                    "broker": "BINANCE",
+                    "ticker": {
+                        "ticker": "BTCUSDT",
+                        "base_ticker": "BTC",
+                        "quote_ticker": "USDT",
+                    },
+                    "purchase_datetime": mock.ANY,
+                    "price": mock.ANY,
+                    "side": "SELL",
+                    "size": mock.ANY,
+                    "type": "market",
+                    "status": "TESTNET",
+                    "take_profit": mock.ANY,
+                    "stop_loss": mock.ANY,
+                    "trailing_stop_loss_activated": False,
+                    "trailing_stop_loss_max": mock.ANY,
+                    "trailing_stop_loss": mock.ANY,
+                    "profit": mock.ANY,
+                    "profit_percent": mock.ANY,
+                    "sold_datetime": mock.ANY,
+                    "reason": "PRICE_BELOW_SL",
+                },
+            )
+
+        # remove pending removals
+        [self.Binance.open_orders.pop(o) for o in self.Binance._pending_remove]
+        self.Binance._pending_remove = []
+        self.Binance.save()
+
+    def test_binance_update_above_tp(self):
+        self.test_binance_purchase_btc_usdt()
+        self.Binance.config.ENABLE_TRAILING_STOP_LOSS = False
+
+        for key, value in self.Binance.open_orders.items():
+            self.Binance.update(
+                key,
+                value,
+                current_price=self.Binance.open_orders["BTCUSDT"].price + 100000,
+            )
+
+            self.assertEqual(
+                self.Binance.sold["BTCUSDT"].dict(),
+                {
+                    "broker": "BINANCE",
+                    "ticker": {
+                        "ticker": "BTCUSDT",
+                        "base_ticker": "BTC",
+                        "quote_ticker": "USDT",
+                    },
+                    "purchase_datetime": mock.ANY,
+                    "price": mock.ANY,
+                    "side": "SELL",
+                    "size": mock.ANY,
+                    "type": "market",
+                    "status": "TESTNET",
+                    "take_profit": mock.ANY,
+                    "stop_loss": mock.ANY,
+                    "trailing_stop_loss_activated": False,
+                    "trailing_stop_loss_max": mock.ANY,
+                    "trailing_stop_loss": mock.ANY,
+                    "profit": mock.ANY,
+                    "profit_percent": mock.ANY,
+                    "sold_datetime": mock.ANY,
+                    "reason": "PRICE_ABOVE_TP",
+                },
+            )
 
         # remove pending removals
         [self.Binance.open_orders.pop(o) for o in self.Binance._pending_remove]
@@ -169,29 +283,38 @@ class TestBot(TestCase):
         self.assertTrue("BTC/USDT" in self.FTX.open_orders)
 
     def test_ftx_update_below_sl(self):
-        self.FTX.open_orders = Util.load_json(Config.TEST_DIR.joinpath("FTX_order_test.json"),
-                                              util.models.Order)
+        self.FTX.open_orders = Util.load_json(
+            Config.TEST_DIR.joinpath("FTX_order_test.json"), util.models.Order
+        )
 
         for key, value in self.FTX.open_orders.items():
             self.FTX.update(key, value, current_price=30000)
 
             expected = Util.load_json(
-                Config.TEST_DIR.joinpath("FTX_order_test_update_below_sl_expected.json"), util.models.Sold
+                Config.TEST_DIR.joinpath(
+                    "FTX_order_test_update_below_sl_expected.json"
+                ),
+                util.models.Sold,
             )
             expected["BTC/USDT"].sold_datetime = self.FTX.sold["BTC/USDT"].sold_datetime
             self.assertDictEqual(expected, self.FTX.sold)
 
     def test_ftx_update_above_max(self):
-        self.FTX.open_orders = Util.load_json(Config.TEST_DIR.joinpath("FTX_order_test.json"),
-                                              util.models.Order)
+        self.FTX.open_orders = Util.load_json(
+            Config.TEST_DIR.joinpath("FTX_order_test.json"), util.models.Order
+        )
 
         self.FTX.config.TRAILING_STOP_LOSS_PERCENT = 2
 
         for key, value in self.FTX.open_orders.items():
             self.FTX.update(key, value, current_price=60000)
 
-            expected = Util.load_json(Config.TEST_DIR.joinpath("FTX_order_test_update_above_max_expected.json"),
-                                      util.models.Order)
+            expected = Util.load_json(
+                Config.TEST_DIR.joinpath(
+                    "FTX_order_test_update_above_max_expected.json"
+                ),
+                util.models.Order,
+            )
             self.assertDictEqual(expected, self.FTX.open_orders)
 
     def test_ftx_update_above_tp(self):
@@ -205,22 +328,30 @@ class TestBot(TestCase):
             self.FTX.update(key, value, current_price=60000)
 
             expected: Dict[str, util.models.Sold] = Util.load_json(
-                Config.TEST_DIR.joinpath("FTX_order_test_update_above_tp_expected.json"), util.models.Sold)
+                Config.TEST_DIR.joinpath(
+                    "FTX_order_test_update_above_tp_expected.json"
+                ),
+                util.models.Sold,
+            )
 
             expected["BTC/USDT"].sold_datetime = self.FTX.sold["BTC/USDT"].sold_datetime
             self.assertDictEqual(expected, self.FTX.sold)
 
     def test_ftx_update_below_tsl(self):
-        self.FTX.open_orders = Util.load_json(Config.TEST_DIR.joinpath("FTX_order_test.json"),
-                                              util.models.Order)
+        self.FTX.open_orders = Util.load_json(
+            Config.TEST_DIR.joinpath("FTX_order_test.json"), util.models.Order
+        )
 
         for key, value in self.FTX.open_orders.items():
             self.FTX.update(key, value, current_price=60000)
             self.FTX.update(key, value, current_price=25000)
 
             expected: Dict[str, util.models.Sold] = Util.load_json(
-                Config.TEST_DIR.joinpath("FTX_order_test_update_below_tsl_expected.json"),
-                util.models.Sold)
+                Config.TEST_DIR.joinpath(
+                    "FTX_order_test_update_below_tsl_expected.json"
+                ),
+                util.models.Sold,
+            )
 
             expected["BTC/USDT"].sold_datetime = self.FTX.sold["BTC/USDT"].sold_datetime
             self.assertDictEqual(expected, self.FTX.sold)
