@@ -1,29 +1,73 @@
 # Automatic New Cryptocurrency Trading Bot
-This is a major re-write of [binance-trading-bot-new-coins](https://github.com/CyberPunkMetalHead/binance-trading-bot-new-coins "binance-trading-bot-new-coins") - credit for the idea goes to him.
 
-This trading bot detects new coins as soon as they are listed on various exchanges, and automatically places sell and buy orders.  Binance and FTX are currently supported. In addition, it comes with trailing stop loss, stop loss, take profit, and other features.
+This is a major re-write
+of [binance-trading-bot-new-coins](https://github.com/CyberPunkMetalHead/binance-trading-bot-new-coins "binance-trading-bot-new-coins") - credit for the idea goes to him.
+
+In general, the price of a coin immediately increases for a few minutes the moment it is added to a new exchange. This trading bot detects these new coins as soon as they are listed and places buy order as soon as possible.  The bot will then automatically sell the coin based on user defined TP, SL, or TSL percentages as the price of the con changes. Binance and FTX are currently supported. 
+
+Features include:
+- Test mode
+- Auto sell using Stop Loss, Take Profit, Trailing Stop Loss
+- Discord and Telegram notifications
+- Optional: Frontload requests towards the beginning of each minute
+- Optional: Automatic speed adjustments to avoid API limitations (Binance)
 
 It comes with a live and test mode, so naturally, use it at your own risk.
 
-# Requirements:
-- Python 3.9 is required
+## Suggested Setup:
 
-### This project now uses submodules!
-####The program _should_ auto install everything for you, but if not:
-#### How to Clone With Submodules:
+Speed is _very_ important for this program to produce successful trades. The setup below is averaging ~0.05 seconds per
+iteration - if your local copy is much higher than this I would consider using this set up instead.
+
+1. Create an AWS account
+2. **Choose `Asia Pacific (Tokyo) ap-northeast-1` region from menu at the top right**
+1. Search for `EC2` in the search bar.
+    1. Choose `Ubuntu Server 20.04 LTS (HVM), SSD Volume Type`
+    1. Choose `t2.micro`.  This is offered for free from AWS for a year
+    1. Choose `Review and Launch` and create the instance
+    1. Create an SSH Key.  Download and save somewhere safe
+1. Either SSH into instance or choose `connect` from the UI
+1. Once in the instance:
+   1. Run `sudo apt-get update`
+   1. Run `sudo apt-get install git`
+   1. Run `sudo apt install python3-pip`
+   1. Follow steps in Installation section.
+
+### Don't close the SSH Window!
+Closing the SSH window will stop the process.  To keep the program running after closing the SSH window, run the following:
+1. Run `sudo apt-get install screen`
+2. Run `screen`
+3. Run `python3 main.py`
+4. Press `ctrl-a` then `ctrl-d` (both windows and mac). This will run the program in the background.
+5. To go back, run `screen -r`
+
+## Installation:
+- Python 3.7+ is required
+
+1. Git clone the repo: `git clone https://github.com/cdalton713/trading-bot-new-coins`
+2. Run `pip install -r requirements.txt`
+3. Make copies/rename `auth.example.yml` and `config.example.yml` and edit the files as necessary
+4. Run `python main.py`.  Follow any prompts.
+
+### This project uses submodules!
+**Why?** I realize this is slightly inconvenient, but I need some parts of this project for other things!  Submodules allow me to share components across different projects.
+
+#### The program _should_ auto install everything for you, but if not:
+
+##### How to Clone With Submodules:
+
 1. `git clone --recurse-submodules https://github.com/cdalton713/trading-bot-new-coins`
 
-#### I Cloned Prior to This Change:
+##### I Cloned Prior to This Change:
+
 1. cd into directory
 2. `git submodule init`
 3. `git submodule update`
 
-#### A New Update Is Out:
+##### A New Update Is Out:
 1. cd into directory
 2. `git submodule init`
 3. `git submodule update`
-
-***Why?** I realize this is slightly inconvenient, but I need some parts of this project for other things!  Submodules allow me to share components across different projects.
 
 ## How to Set Up Notifications:
 ### Discord:
