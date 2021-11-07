@@ -113,7 +113,7 @@ def get_sleep_time(current_time: datetime) -> int:
             Config.NOTIFICATION_SERVICE.info(f"Bot request count above [{Config.RATE_INTERVENTION_PERCENTAGE}%] of "
                                              f"rate limit")
 
-        sleep_time = max((resume_time - current_time).seconds, 1)
+        sleep_time = min(max((resume_time - current_time).seconds, 1), 59)
 
         if Config.AUTO_INCREASE_FREQUENCY and increase_time:
             Config.NOTIFICATION_SERVICE.info(
