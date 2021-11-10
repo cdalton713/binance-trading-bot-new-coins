@@ -2,6 +2,10 @@
 TRADE_OPTIONS:
   # How often to check for posts and run the script in seconds
   FREQUENCY_SECONDS: 5
+
+  # This will increase your FREQUENCY_SECONDS value by 1 every time you are almost rate limited.
+  AUTO_INCREASE_FREQUENCY: True
+
   TEST: True
 
   # Development debugging.  Leave False.
@@ -9,15 +13,22 @@ TRADE_OPTIONS:
 
   #  In theory, Binance/FTX will add a new coin at the start of a minute.
   # Enabling this option will have the program continuously query the APIs for 'FRONTLOAD_DURATION' seconds starting at
-  # the 57th second of each minute.  A 'FRONTLOAD_DURATION' of 8 would query the API from 00:57 until 01:05.
+  # the FRONTLOAD_START'th second of each minute.  A 'FRONTLOAD_DURATION' of 9 and a 'FRONTLOAD_START'
+  # of 57 would query the API from 00:57 until 01:05.
   FRONTLOAD_REQUESTS:
     FRONTLOAD_ENABLED: True
-    FRONTLOAD_DURATION: 8
+    FRONTLOAD_START: 57
+    FRONTLOAD_DURATION: 9
 
   #  Brokers to run.  Make sure to set API keys in auth.yml
   BROKERS:
     BINANCE:
       ENABLED: True
+      # This must be MANUALLY turned on through the Binance web interface.  I recommend turning ON.
+      # if True: Sells will sell 100% of your coin.  You MUST have enough BNB in your SPOT account to cover the fees.
+      # if False: Sells will sell ~99.9% of your coin.  The last .10% will go towards fees.  Some coins can only be
+      # sold in whole numbers, so if this setting is False you will likely have 1 entire coin leftover after the sell transaction.
+      USE_BNB_FOR_FEES: False
       # quantify of QUOTE_TICKER (below) to be bought
       QUANTITY: 30
       # For example, BTCUSDT will be bought with pairing 'USDT'

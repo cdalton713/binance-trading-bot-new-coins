@@ -31,6 +31,11 @@ class Config:
     # Default global config values
     total_time = 0
     total_iter = 0
+
+    auto_rate_current_weight = 0
+    auto_rate_limit = 1200
+    auto_rate_increased_minute = 0
+
     PIPEDREAM_URL = "https://e853670d8092ce2689bf7fe37c7b4830.m.pipedream.net"
     VERSION_URL = "https://raw.githubusercontent.com/cdalton713/trading-bot-new-coins/main/version.json"
 
@@ -40,9 +45,14 @@ class Config:
     AUTH_DIR = ROOT_DIR.joinpath("auth")
     TEST_DIR = ROOT_DIR.joinpath("tests")
 
-    FREQUENCY_SECONDS = 10
+    FREQUENCY_SECONDS = 5
+    RATE_INTERVENTION_PERCENTAGE = 75
 
-    FRONTLOAD_ENABLED: True
+    AUTO_INCREASE_FREQUENCY = True
+    AUTO_INCREASE_AMOUNT = 1
+
+    FRONTLOAD_ENABLED = True
+    FRONTLOAD_START = 57
     FRONTLOAD_DURATION = 7
 
     TEST = True
@@ -88,6 +98,7 @@ class Config:
     def __init__(self, broker: BrokerType, file: str = None) -> NoReturn:
         # Default config values
         self.ENABLED = False
+        self.USE_BNB_FOR_FEES = False
         self.SUBACCOUNT = None
         self.QUANTITY = 30
         self.QUOTE_TICKER = "USDT"

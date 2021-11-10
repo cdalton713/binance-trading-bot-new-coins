@@ -15,8 +15,8 @@ from util.models import Sold, Order
 
 
 class Util:
-    FORMAT = "[%(levelname)s] %(asctime)s: %(message)s."
-    VERBOSE_FORMAT = "%(asctime)s: %(message)s."
+    FORMAT = "[%(levelname)s] %(asctime)s: %(message)s"
+    VERBOSE_FORMAT = "%(asctime)s: %(message)s"
     DATE_FORMAT = None
 
     @staticmethod

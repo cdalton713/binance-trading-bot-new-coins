@@ -1,5 +1,8 @@
 import traceback
+from datetime import datetime
 from typing import List, Dict, NoReturn, Tuple
+
+import math
 
 from broker import Broker
 from notification.notification import pretty_entry, pretty_close
@@ -40,7 +43,8 @@ class Bot:
                 )
 
         # Meta info
-        self.interval = 0
+        self.time = datetime.now()
+        self.periodic_update_sent = False
 
     async def run_async(self) -> NoReturn:
         """
@@ -76,10 +80,8 @@ class Bot:
                     self.process_new_ticker(new_ticker)
             else:
                 Config.NOTIFICATION_SERVICE.debug(
-                    f"[{self.broker.brokerType}]\tNo new tickers found.."
+                    f"[{self.broker.brokerType}]\tNo new tickers found"
                 )
-
-            self.interval += 1
 
         except Exception as e:
             self.save()
@@ -143,21 +145,21 @@ class Bot:
         log an update about every LOG_INFO_UPDATE_INTERVAL minutes
         also re-saves files
         """
-        if (
-            self.interval > 0
-            and self.interval
-            % (
-                (Config.PROGRAM_OPTIONS["LOG_INFO_UPDATE_INTERVAL"] * 60)
-                / Config.FREQUENCY_SECONDS
-            )
-            == 0
-        ):
+        minutes_past = math.floor(((datetime.now() - self.time).total_seconds() / 60))
+        if minutes_past > 0 and minutes_past % Config.PROGRAM_OPTIONS[
+            "LOG_INFO_UPDATE_INTERVAL"
+        ] == 0 and not self.periodic_update_sent:
             Config.NOTIFICATION_SERVICE.info(
                 f"[{self.broker.brokerType}] ORDERS UPDATE:\n\t{self.open_orders}"
             )
             Config.NOTIFICATION_SERVICE.info(f"[{self.broker.brokerType}]\tSaving..")
             self.save()
             self.upgrade_update()
+            self.periodic_update_sent = True
+        elif minutes_past > 0 and minutes_past % Config.PROGRAM_OPTIONS[
+            "LOG_INFO_UPDATE_INTERVAL"
+        ] > 0 and self.periodic_update_sent:
+            self.periodic_update_sent = False
 
     def get_starting_tickers(self) -> Tuple[List[Ticker], Dict[str, bool]]:
         """
@@ -166,7 +168,9 @@ class Bot:
         All the new tickers detected during the loop will have a value of False.
         """
 
-        tickers = self.broker.get_tickers(self.config.QUOTE_TICKER)
+        tickers, headers = self.broker.get_tickers(self.config.QUOTE_TICKER)
+
+        self.config.RATE_LIMIT = self.broker.get_rate_limit()
         ticker_seen_dict: Dict[str, bool] = {}
 
         for ticker in tickers:
@@ -181,9 +185,11 @@ class Bot:
         """
         new_tickers = []
         Config.NOTIFICATION_SERVICE.debug(
-            f"[{self.broker.brokerType}]\tGetting all tickers.."
+            f"[{self.broker.brokerType}]\tGetting all tickers"
         )
-        all_tickers_recheck = self.broker.get_tickers(self.config.QUOTE_TICKER)
+        all_tickers_recheck, headers = self.broker.get_tickers(self.config.QUOTE_TICKER)
+
+        Config.auto_rate_current_weight = int(headers['x-mbx-used-weight-1m'])
 
         if (
             all_tickers_recheck is not None
