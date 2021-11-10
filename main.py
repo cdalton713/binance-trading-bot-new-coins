@@ -80,7 +80,7 @@ def get_sleep_time(current_time: datetime) -> int:
         >= Config.auto_rate_limit * Config.RATE_INTERVENTION_PERCENTAGE / 100
     ):
         increase_time = True
-        if Config.auto_rate_current_weight >= Config.auto_rate_limit * 0.85:
+        if Config.auto_rate_current_weight >= Config.auto_rate_limit * 0.95:
             resume_time = datetime(
                 current_time.year,
                 current_time.month,
@@ -123,26 +123,28 @@ def get_sleep_time(current_time: datetime) -> int:
             Config.FREQUENCY_SECONDS += Config.AUTO_INCREASE_AMOUNT
 
         Config.NOTIFICATION_SERVICE.info(
-            "Sleeping for [{}] seconds until [{}] to avoid exceeding rate limits".format(
+            "Sleeping for [{}] seconds until [{}] to avoid exceeding rate limits\n".format(
                 sleep_time, resume_time
             )
         )
+    elif current_time.second + Config.FREQUENCY_SECONDS > Config.FRONTLOAD_START:
+        sleep_time = Config.FRONTLOAD_START - current_time.second
     else:
         sleep_time = Config.FREQUENCY_SECONDS
 
-    Config.NOTIFICATION_SERVICE.debug("Sleeping for [{}] seconds".format(sleep_time))
-    return sleep_time
+    Config.NOTIFICATION_SERVICE.debug("Sleeping for [{}] seconds\n".format(sleep_time))
+    return min(max(sleep_time, 1), 59)
 
 
 if __name__ == "__main__":
-    Config.NOTIFICATION_SERVICE.info("Starting..")
+    Config.NOTIFICATION_SERVICE.info("Starting...")
     loop = asyncio.get_event_loop()
     bots = setup()
     try:
         loop.create_task(forever(bots))
         loop.run_forever()
     except KeyboardInterrupt as e:
-        Config.NOTIFICATION_SERVICE.info("Exiting program..")
+        Config.NOTIFICATION_SERVICE.info("Exiting program...")
     except Exception as e:
         Config.NOTIFICATION_SERVICE.error(traceback.format_exc())
     finally:

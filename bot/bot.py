@@ -80,7 +80,7 @@ class Bot:
                     self.process_new_ticker(new_ticker)
             else:
                 Config.NOTIFICATION_SERVICE.debug(
-                    f"[{self.broker.brokerType}]\tNo new tickers found.."
+                    f"[{self.broker.brokerType}]\tNo new tickers found"
                 )
 
         except Exception as e:
@@ -185,7 +185,7 @@ class Bot:
         """
         new_tickers = []
         Config.NOTIFICATION_SERVICE.debug(
-            f"[{self.broker.brokerType}]\tGetting all tickers.."
+            f"[{self.broker.brokerType}]\tGetting all tickers"
         )
         all_tickers_recheck, headers = self.broker.get_tickers(self.config.QUOTE_TICKER)
 
