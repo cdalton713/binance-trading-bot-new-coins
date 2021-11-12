@@ -16,6 +16,8 @@ class Bot:
         self.broker = Broker.factory(broker)
         self.config = Config(self.broker.brokerType)
 
+        self.broker.verify_quantity(self.config)
+
         self._pending_remove = []
 
         self.ticker_seen_dict = []
@@ -243,8 +245,6 @@ class Bot:
             current_price=current_price,
         )
 
-        Config.NOTIFICATION_SERVICE.message("CLOSE", pretty_close, (order,))
-
         # pending remove order from json file
         self.order_history.append({order.ticker.ticker: order})
         self._pending_remove.append(order.ticker.ticker)
@@ -272,6 +272,7 @@ class Bot:
             reason=reason,
         )
 
+        Config.NOTIFICATION_SERVICE.message("CLOSE", pretty_close, (sold,))
         Config.NOTIFICATION_SERVICE.get_service("VERBOSE_FILE").error(
             "SOLD:\n{}".format(sold.json())
         )

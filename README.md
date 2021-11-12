@@ -64,6 +64,9 @@ I would love contributors! Please send a pull request, and I will review it.
 Please include any applicable stack traces and logs.  There are currently two log files: `errors.log` and `verbose_log.log`.  Please also attach any relevant information from these files.
 
 ## Changelog:
+- 2021-11-12:
+  1. Check that Binance quantity is greater than $10.00
+  2. Notifications for sold positions updated
 - 2021-11-05:
   1. Various changes/fixes to when-to-sell calculations
   2. Verbose file formatting updated

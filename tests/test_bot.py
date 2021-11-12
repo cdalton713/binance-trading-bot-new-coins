@@ -23,7 +23,7 @@ class TestBot(TestCase):
     def setUp(self) -> None:
         # Config.load_global_config()
 
-        Config.TEST = True
+        Config.TEST = False
         Config.BINANCE_TESTNET = True
         self.FTX = Bot("FTX")
         self.Binance = Bot("BINANCE")

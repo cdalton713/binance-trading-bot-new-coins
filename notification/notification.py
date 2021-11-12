@@ -1,10 +1,10 @@
 from typing import Dict, Tuple, Optional
 from multiNotification import Notification
 from multiNotification.notification.models import NotificationSettings
-from util.models import Order
+from util.models import Order, Sold
 
 
-def pretty_format_message(order: Order) -> str:
+def pretty_format_entry(order: Order) -> str:
     return """
     Broker: {broker}
     Datetime: {datetime}
@@ -22,6 +22,30 @@ def pretty_format_message(order: Order) -> str:
     )
 
 
+def pretty_format_close(sold: Sold) -> str:
+    return """
+    Broker: {broker}
+    Datetime: {datetime}
+    Status: {status}
+    Reason: {reason}
+
+    Ticker: {ticker}
+    Amount: {amount}
+    Price: {price}
+    Profit: {profit}
+    Profit Percent: {profit_percent}""".format(
+        broker=sold.broker,
+        datetime=sold.sold_datetime,
+        status=sold.status,
+        reason=sold.reason,
+        ticker=sold.ticker.ticker,
+        amount=round(sold.size, 4),
+        price=round(sold.price, 4),
+        profit=round(sold.profit, 4),
+        profit_percent=round(sold.profit_percent, 4)
+    )
+
+
 def pretty_entry(service: Notification, message: Optional[str] = None, fn_args: Optional[Tuple] = None,
                  fn_kwargs: Optional[Dict] = None) -> str:
     if service.settings.entry:
@@ -33,7 +57,7 @@ def pretty_entry(service: Notification, message: Optional[str] = None, fn_args: 
             if fn_kwargs is not None and "comment" in fn_kwargs:
                 msg += "\n{comment}\n".format(comment=fn_kwargs["comment"])
 
-            msg += pretty_format_message(fn_args[0])
+            msg += pretty_format_entry(fn_args[0])
             return msg
     return ''
 
@@ -49,7 +73,7 @@ def pretty_close(service: Notification, message: Optional[str] = None, fn_args: 
             if fn_kwargs is not None and "comment" in fn_kwargs:
                 msg += "\n{comment}\n".format(comment=fn_kwargs["comment"])
 
-            msg += pretty_format_message(fn_args[0])
+            msg += pretty_format_close(fn_args[0])
             return msg
     return ''
 
@@ -83,15 +107,14 @@ DEFAULT_NOTIFICATIONS = CustomNotificationSettings(
 def parse_settings(settings: Dict):
     try:
         settings = CustomNotificationSettings(
-        message=settings['SEND_MESSAGE'] if 'SEND_MESSAGE' in settings else DEFAULT_NOTIFICATIONS.message,
-        error=settings['SEND_ERROR'] if 'SEND_ERROR' in settings else DEFAULT_NOTIFICATIONS.error,
-        warning=settings['SEND_WARNING'] if 'SEND_WARNING' in settings else DEFAULT_NOTIFICATIONS.warning,
-        info=settings['SEND_INFO'] if 'SEND_INFO' in settings else DEFAULT_NOTIFICATIONS.info,
-        debug=settings['SEND_DEBUG'] if 'SEND_DEBUG' in settings else DEFAULT_NOTIFICATIONS.debug,
-        entry=settings['SEND_ENTRY'] if 'SEND_ENTRY' in settings else DEFAULT_NOTIFICATIONS.entry,
-        close=settings['SEND_CLOSE'] if 'SEND_CLOSE' in settings else DEFAULT_NOTIFICATIONS.close,
+            message=settings['SEND_MESSAGE'] if 'SEND_MESSAGE' in settings else DEFAULT_NOTIFICATIONS.message,
+            error=settings['SEND_ERROR'] if 'SEND_ERROR' in settings else DEFAULT_NOTIFICATIONS.error,
+            warning=settings['SEND_WARNING'] if 'SEND_WARNING' in settings else DEFAULT_NOTIFICATIONS.warning,
+            info=settings['SEND_INFO'] if 'SEND_INFO' in settings else DEFAULT_NOTIFICATIONS.info,
+            debug=settings['SEND_DEBUG'] if 'SEND_DEBUG' in settings else DEFAULT_NOTIFICATIONS.debug,
+            entry=settings['SEND_ENTRY'] if 'SEND_ENTRY' in settings else DEFAULT_NOTIFICATIONS.entry,
+            close=settings['SEND_CLOSE'] if 'SEND_CLOSE' in settings else DEFAULT_NOTIFICATIONS.close,
         )
     except Exception as e:
         print("Error with config file.  Do you have commas after each SEND_XXX?  If so, remove them.")
     return settings
-
