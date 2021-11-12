@@ -16,7 +16,7 @@ from util import Config, Util
 from util.decorators import retry
 from util.exceptions import *
 from util.models import BrokerType, Ticker, Order
-
+from time import sleep
 logger = logging.getLogger(__name__)
 
 
@@ -52,6 +52,10 @@ class Broker(ABC):
                     )
 
     @abstractmethod
+    def verify_quantity(self, config: Config) -> NoReturn:
+        raise NotImplementedError
+
+    @abstractmethod
     def get_tickers(self, quote_ticker: str, **kwargs) -> Tuple[List[Ticker], Dict]:
         """
         Returns all coins from Broker
@@ -77,6 +81,7 @@ class Broker(ABC):
     def get_rate_limit(self) -> int:
         raise NotImplementedError
 
+
 class FTX(FtxClient, Broker):
     def __init__(self, subaccount: str, key: str, secret: str) -> NoReturn:
         self.brokerType = "FTX"
@@ -89,10 +94,12 @@ class FTX(FtxClient, Broker):
 
     @retry(
         (
-            requests.exceptions.ConnectionError,
-            requests.exceptions.HTTPError,
-            NoBrokerResponseException,
-            Exception,
+                requests.exceptions.ConnectionError,
+                requests.exceptions.HTTPError,
+                requests.exceptions.SSLError,
+                requests.exceptions.RequestException,
+                NoBrokerResponseException,
+                Exception,
         ),
         2,
         0,
@@ -112,9 +119,9 @@ class FTX(FtxClient, Broker):
             resp = []
             for ticker in api_resp:
                 if (
-                    ticker["type"] == "spot"
-                    and ticker["enabled"]
-                    and ticker["quoteCurrency"] == quote_ticker
+                        ticker["type"] == "spot"
+                        and ticker["enabled"]
+                        and ticker["quoteCurrency"] == quote_ticker
                 ):
                     if ticker["type"] == "spot" and ticker["enabled"]:
                         resp.append(
@@ -130,6 +137,9 @@ class FTX(FtxClient, Broker):
                 raise BrokerDownException(e.args[0])
             else:
                 raise
+
+    def verify_quantity(self, config: Config) -> NoReturn:
+        pass
 
     @retry(
         (Exception,),
@@ -232,16 +242,15 @@ class FTX(FtxClient, Broker):
 
 class Binance(BinanceClient, Broker):
     def __init__(
-        self, subaccount: str, key: str, secret: str, testnet: bool = False
+            self, subaccount: str, key: str, secret: str, testnet: bool = False
     ) -> NoReturn:
         self.brokerType = "BINANCE"
-
         super().__init__(api_key=key, api_secret=secret, testnet=testnet)
 
     @retry(
         (
-            binance.exceptions.BinanceAPIException,
-            Exception,
+                binance.exceptions.BinanceAPIException,
+                Exception,
         ),
         2,
         3,
@@ -256,18 +265,20 @@ class Binance(BinanceClient, Broker):
         )
         return float(self.get_symbol_ticker(symbol=ticker.ticker)["price"])
 
-    # @retry(
-    #     (
-    #             binance.exceptions.BinanceAPIException,
-    #             Exception,
-    #     ),
-    #     2,
-    #     3,
-    #     None,
-    #     1,
-    #     0,
-    #     logger,
-    # )
+    def verify_quantity(self, config: Config) -> NoReturn:
+        if config.QUANTITY < 11:
+            Config.NOTIFICATION_SERVICE.warning(
+                f"***** WARNING *****\nQuantity of [{config.QUANTITY}] is too low - Binance will likely deny this order.")
+            sleep(10)
+        elif config.QUANTITY * (1 - (config.STOP_LOSS_PERCENT / 100)) < 12:
+            Config.NOTIFICATION_SERVICE.warning(
+                f"***** WARNING *****\nYour stop loss value of [{config.QUANTITY} - "
+                f"(1 - {config.STOP_LOSS_PERCENT / 100}) "
+                f"= ${round(config.QUANTITY * (1 - (config.STOP_LOSS_PERCENT / 100)), 2)}] is less than "
+                f"or around $10.00. If a Stop Loss is triggered and the market value is "
+                f"less than $10.00 Binance will likely deny the sale.")
+            sleep(10)
+
     def place_order(self, config: Config, *args, **kwargs) -> Order:
         kwargs["symbol"] = kwargs["ticker"].ticker
         kwargs["type"] = "market"
@@ -276,6 +287,16 @@ class Binance(BinanceClient, Broker):
         params = {}
         if kwargs["side"] == "BUY":
             kwargs["quoteOrderQty"] = float(config.QUANTITY)
+
+            symbol_info = self.get_symbol_info(kwargs["symbol"])
+            min_notional = symbol_info['filters'][3]
+
+            if kwargs["quoteOrderQty"] <= float(min_notional["minNotional"]):
+                raise TradingBotException(
+                    f"""Quantity too low!  Binance requires [${min_notional["minNotional"]}] USDT worth of 
+                    coin for this trade."""
+                )
+
             for p in ["quoteOrderQty", "side", "symbol", "type"]:
                 params[p] = kwargs[p]
         else:
@@ -284,17 +305,14 @@ class Binance(BinanceClient, Broker):
             # Check lot size requirements
             symbol_info = self.get_symbol_info(kwargs["symbol"])
             lot_size = symbol_info["filters"][2]
+            min_notional = symbol_info['filters'][3]
 
-            if kwargs["quantity"] <= float(lot_size["minQty"]):
+            if kwargs["quantity"] <= float(min_notional["minNotional"]):
                 raise TradingBotException(
-                    """The remaining quantity available to sell is too low.  Binance requires ~$10.30 USDT worth of 
-                    coin per trade.  If the coin decreased in value below this it cannot be sold through this app.  
+                    f"""The remaining quantity available to sell is too low.  Binance requires 
+                    [${min_notional["minNotional"]}] USDT worth of coin for this trade.  
+                    If the coin decreased in value below this it cannot be sold through this app.  
                     Sell as dust on Binance.com."""
-                )
-            if kwargs["quantity"] >= float(lot_size["maxQty"]):
-                raise TradingBotException(
-                    """The remaining quantity is too high.  This is probably in error, 
-                send logs to GitHub repo."""
                 )
 
             step_size = float(lot_size["stepSize"])
@@ -330,6 +348,7 @@ class Binance(BinanceClient, Broker):
                 ),
             )
         else:
+            Config.NOTIFICATION_SERVICE.get_service("VERBOSE_FILE").error(f"LIVE ORDER PARAMS: {params}")
             api_resp = super(Binance, self).create_order(**params)
             Config.NOTIFICATION_SERVICE.get_service("VERBOSE_FILE").error(api_resp)
             fill_sum = 0
@@ -373,10 +392,12 @@ class Binance(BinanceClient, Broker):
 
     @retry(
         (
-            requests.exceptions.ConnectionError,
-            requests.exceptions.HTTPError,
-            NoBrokerResponseException,
-            Exception,
+                requests.exceptions.ConnectionError,
+                requests.exceptions.HTTPError,
+                NoBrokerResponseException,
+                requests.exceptions.SSLError,
+                requests.exceptions.RequestException,
+                Exception,
         ),
         2,
         0,
