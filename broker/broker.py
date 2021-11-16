@@ -307,12 +307,12 @@ class Binance(BinanceClient, Broker):
             lot_size = symbol_info["filters"][2]
             min_notional = symbol_info['filters'][3]
 
-            if kwargs["quantity"] <= float(min_notional["minNotional"]):
+            if (kwargs["quantity"] * kwargs['current_price']) <= float(min_notional["minNotional"]):
                 raise TradingBotException(
-                    f"""The remaining quantity available to sell is too low.  Binance requires 
-                    [${min_notional["minNotional"]}] USDT worth of coin for this trade.  
-                    If the coin decreased in value below this it cannot be sold through this app.  
-                    Sell as dust on Binance.com."""
+                    f"The remaining quantity available to sell is too low.  Binance requires "
+                    f"[${min_notional['minNotional']}] USDT worth of coin for this trade.  If the coin decreased "
+                    f"in value below this it cannot be sold through this app.  Sell as dust on Binance.com.  "
+                    f"Automatically retrying."
                 )
 
             step_size = float(lot_size["stepSize"])

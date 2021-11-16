@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import List, Dict, NoReturn, Tuple
 
 import math
-
+from util.exceptions import  TradingBotException
 from broker import Broker
 from notification.notification import pretty_entry, pretty_close
 from util import Config
@@ -237,13 +237,16 @@ class Bot:
             "Stored Price:\t{}".format(stored_price)
         )
 
-        sell: Order = self.broker.place_order(
-            self.config,
-            ticker=order.ticker,
-            side="sell",
-            size=order.size,
-            current_price=current_price,
-        )
+        try:
+            sell: Order = self.broker.place_order(
+                self.config,
+                ticker=order.ticker,
+                side="sell",
+                size=order.size,
+                current_price=current_price,
+            )
+        except TradingBotException:
+            return
 
         # pending remove order from json file
         self.order_history.append({order.ticker.ticker: order})
