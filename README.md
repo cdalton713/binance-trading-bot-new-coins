@@ -14,6 +14,10 @@ Features include:
 
 It comes with a live and test mode, so naturally, use it at your own risk.
 
+## Discord:
+
+Feel free to join to discuss with others using the program: [Join Discord](https://discord.gg/VjH8NsyxyM)
+
 ## Suggested Setup:
 
 Speed is _very_ important for this program to produce successful trades. The setup below is averaging ~0.05 seconds per
