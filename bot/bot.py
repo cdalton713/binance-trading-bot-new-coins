@@ -136,11 +136,15 @@ class Bot:
             )
 
     def upgrade_update(self) -> NoReturn:
-        self.config.check_version()
-        if self.config.OUTDATED:
-            Config.NOTIFICATION_SERVICE.warning(
-                """\n*******************************************\nNEW UPDATE AVAILABLE. PLEASE UPDATE!\n*******************************************"""
-            )
+        try:
+            self.config.check_version()
+        except Exception as e:
+            Config.NOTIFICATION_SERVICE.warning("\n Update check failed.  Skipping update check.")
+        else:
+            if self.config.OUTDATED:
+                Config.NOTIFICATION_SERVICE.warning(
+                    """\n*******************************************\nNEW UPDATE AVAILABLE. PLEASE UPDATE!\n*******************************************"""
+                )
 
     def periodic_update(self) -> NoReturn:
         """

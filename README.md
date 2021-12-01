@@ -108,6 +108,8 @@ I would love contributors! Please send a pull request, and I will review it.
 Please include any applicable stack traces and logs.  There are currently two log files: `errors.log` and `verbose_log.log`.  Please also attach any relevant information from these files.
 
 ## Changelog:
+- 2021-12-01:
+  1. Skip upgrade check if upgrade parsing fails ([#25](https://github.com/cdalton713/trading-bot-new-coins/issues/25)).
 - 2021-11-12:
   1. Check that Binance quantity is greater than $10.00
   2. Notifications for sold positions updated
